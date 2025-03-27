@@ -5,8 +5,6 @@
 [![Tests](https://github.com/canonical/kafka-k8s-operator/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/canonical/kafka-k8s-operator/actions/workflows/ci.yaml?query=branch%3Amain)
 [![Docs](https://github.com/canonical/kafka-k8s-operator/actions/workflows/sync_docs.yaml/badge.svg)](https://github.com/canonical/kafka-k8s-operator/actions/workflows/sync_docs.yaml)
 
-## Overview
-
 Charmed Apache Kafka K8s delivers automated operations management [from Day 0 to Day 2](https://codilime.com/blog/day-0-day-1-day-2-the-software-lifecycle-in-the-cloud-age/) on the [Apache Kafka](https://kafka.apache.org) event streaming platform deployed on top of a [Kubernetes cluster](https://kubernetes.io/). It is an open source, end-to-end, production ready data platform on top of cloud native technologies.
 
 The Charmed Operator can be found on [Charmhub](https://charmhub.io/kafka-k8s) and it comes with features such as:
@@ -39,14 +37,14 @@ For more information on how to perform typical tasks, see the How to guides sect
 The Apache Kafka and Apache ZooKeeper operators can both be deployed as follows:
 
 ```shell
-$ juju deploy zookeeper-k8s -n 5
-$ juju deploy kafka-k8s -n 3
+juju deploy zookeeper-k8s -n 5 --trust
+juju deploy kafka-k8s -n 3 --trust
 ```
 
 After this, it is necessary to connect them:
 
 ```shell
-$ juju integrate kafka-k8s zookeeper-k8s
+juju integrate kafka-k8s zookeeper-k8s
 ```
 
 To watch the process, the `juju status` command can be used. Once all the units shown as `active|idle`, the credentials to access a broker can be queried with:

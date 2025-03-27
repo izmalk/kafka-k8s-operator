@@ -21,10 +21,7 @@ To run the charm locally with Juju, it is recommended to use [LXD](https://linux
 
 ## Build and Deploy
 
-To build the charm in this repository, from the root of the dir you can run:
 Once you have Juju set up locally, to download, build and deploy the charm you can run:
-
-### Deploy
 
 ```bash
 # Clone and enter the repository
@@ -40,14 +37,14 @@ juju model-config logging-config="<root>=INFO;unit=DEBUG"
 # Build the charm locally
 charmcraft pack
 
-# Deploy the latest Apache ZooKeeper release
-juju deploy zookeeper-k8s --channel edge -n 3
+# Deploy the latest Apache ZooKeeper charm
+juju deploy zookeeper-k8s --channel edge -n 3 --trust
 
-# Deploy the charm
-juju deploy ./*.charm -n 3
+# Deploy the local Apache Kafka charm
+juju deploy ./*.charm -n 3 --trust
 
-# After Apache ZooKeeper has initialised, relate the applications
-juju relate kafka-k8s zookeeper-k8s
+# After Apache ZooKeeper has initialised, integrate the applications
+juju integrate kafka-k8s zookeeper-k8s
 ```
 
 ## Developing
