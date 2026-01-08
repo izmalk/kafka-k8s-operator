@@ -8,7 +8,10 @@ The pages in this section aim to provide additional context and deeper understan
 Secure deployments of Charmed Apache Kafka K8s can be achieved through using recommended configurations, including setting up encryption and authentication.
 For more details, see [Security topic overview](explanation-security) and [Cryptography usage explanation](explanation-cryptography) pages.
 
-## Cluster configuration
+## Clustering
+
+Read an [explanation](explanation-cluster-configuration) of why we need Apache ZooKeeper
+to coordinate and sync metadata between active brokers.
 
 Check the [MirrorMaker explanation](explanation-mirrormaker2-0) page for more context in to how MirrorMaker replicates and migrates Apache Kafka clusters.
 
@@ -27,6 +30,7 @@ To read more about our usage of Apache Kafka and other relevant trademarks, see 
 
 Security<security.md>
 Cryptography<cryptography.md>
+Cluster configuration<cluster-configuration.md>
 Backups<backups.md>
 Trademarks<trademarks.md>
 MirrorMaker2.0<mirrormaker2-0.md>
