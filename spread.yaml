@@ -17,6 +17,7 @@ backends:
       # Pre-install snaps and enable root SSH for Spread.
       multipass exec "$instance_name" -- sudo sh -c "
         set -e
+        cd /root
         snap install microk8s --channel=1.31-strict/stable
         snap install juju --channel=3/stable
         snap install yq
@@ -25,11 +26,13 @@ backends:
         # Add root to microk8s group and wait for MicroK8s to be ready.
         usermod -a -G snap_microk8s root
         microk8s status --wait-ready --timeout 300
-        microk8s enable dns hostpath-storage metallb:10.64.140.43-10.64.140.49
+        microk8s enable dns
+        microk8s enable hostpath-storage
+        microk8s enable metallb:10.64.140.43-10.64.140.49
 
-        # Bootstrap Juju on MicroK8s.
+        # Bootstrap Juju on MicroK8s (sg activates snap_microk8s group).
         mkdir -p /root/.local/share/juju
-        juju bootstrap microk8s microk8s
+        sg snap_microk8s -c 'juju bootstrap microk8s microk8s'
 
         echo root:\${SPREAD_PASSWORD} | chpasswd
         printf 'PasswordAuthentication yes\nPermitRootLogin yes\n' \
