@@ -1,0 +1,59 @@
+project: charmed-kafka-k8s-docs-tutorial
+
+# The project root is mirrored to this path inside the test VM.
+path: /charmed-kafka-k8s
+
+backends:
+  multipass:
+    type: adhoc
+    allocate: |
+      instance_name="kafka-k8s-tutorial-vm"
+      multipass delete --purge "$instance_name" 2>/dev/null || true
+
+      # 4 CPUs / 8 GB RAM / 50 GB disk – sized for a MicroK8s Juju K8s cluster.
+      multipass launch --cpus "${SPREAD_VM_CPUS:-4}" --disk "${SPREAD_VM_DISK:-50G}" \
+        --memory "${SPREAD_VM_MEM:-8G}" --name "$instance_name" 24.04
+
+      # Pre-install snaps and enable root SSH for Spread.
+      multipass exec "$instance_name" -- sudo sh -c "
+        set -e
+        snap install microk8s --channel=1.31-strict/stable
+        snap install juju --channel=3/stable
+        snap install yq
+        snap install jq
+
+        # Add root to microk8s group and wait for MicroK8s to be ready.
+        usermod -a -G snap_microk8s root
+        microk8s status --wait-ready --timeout 300
+        microk8s enable dns hostpath-storage metallb:10.64.140.43-10.64.140.49
+
+        # Bootstrap Juju on MicroK8s.
+        mkdir -p /root/.local/share/juju
+        juju bootstrap microk8s microk8s
+
+        echo root:\${SPREAD_PASSWORD} | chpasswd
+        printf 'PasswordAuthentication yes\nPermitRootLogin yes\n' \
+          > /etc/ssh/sshd_config.d/10-spread.conf
+        systemctl restart ssh
+      "
+
+      ip=$(multipass info --format csv "$instance_name" | tail -1 | cut -d, -f3)
+      ADDRESS "$ip"
+
+    discard: |
+      instance_name="kafka-k8s-tutorial-vm"
+      multipass delete --purge "$instance_name"
+
+    systems:
+      - ubuntu-24.04-64:
+          workers: 1
+
+suites:
+  tests/tutorial/:
+    summary: Charmed Apache Kafka K8s tutorial
+    systems:
+      - ubuntu-24.04-64
+    prepare: |
+      # Spread SSHs in as root but does not always set HOME=/root.
+      export HOME=/root
+      mkdir -p /root/.local/share/juju

@@ -4,6 +4,11 @@ myst:
     description: "Manage and rotate passwords for Charmed Apache Kafka K8s admin users and external clients using Juju secrets and Data Integrator charm."
 ---
 
+<!-- test:spread
+priority: 0
+kill-timeout: 30m
+-->
+
 (tutorial-manage-passwords)=
 # 4. Manage passwords
 
@@ -34,11 +39,17 @@ You can change the admin password to a new password by creating a new Juju secre
 
 First, create the Juju secret with the new password you wish to use:
 
+<!-- test:skip -->
 ```shell
 juju add-secret internal-kafka-users admin=mynewpassword
 ```
 
 Note the generated secret ID that you see as a response. It will look something like `secret:d2lkl00co3bs3dacm300`.
+
+<!-- test:set-variables
+command: juju add-secret internal-kafka-users admin=mynewpassword | awk '{print "secret-uri: " $0}'
+SECRET_URI: secret-uri
+-->
 
 Now, grant Charmed Apache Kafka K8s access to the new secret:
 
@@ -49,8 +60,11 @@ juju grant-secret internal-kafka-users kafka-k8s
 Finally, inform Charmed Apache Kafka K8s of the new secret to use for it's internal system users using the secret ID saved earlier:
 
 ```shell
-juju config kafka-k8s system-users=secret:d2lkl00co3bs3dacm300
+juju config kafka-k8s system-users=<secret-uri>
 ```
+
+<!-- test:wait --seconds 60 -->
+<!-- test:await-idle --timeout 600 -->
 
 Now, Charmed Apache Kafka K8s will be able to read the new `admin` password from the correct secret, and will proceed to apply the new password on each unit with a rolling-restart of the services with the new configuration.
 
@@ -68,7 +82,7 @@ juju run data-integrator/leader get-credentials
 
 Running the command should output:
 
-```shell 
+```yaml
 kafka:
   consumer-group-prefix: relation-8-
   data: '{"resource": "test-topic", "salt": "w3goGsGhdyROwoaP", "extra-user-roles":
@@ -105,7 +119,7 @@ juju run data-integrator/leader get-credentials
 
 Running the command should now output a different password:
 
-```shell 
+```yaml
 kafka:
   consumer-group-prefix: relation-8-
   data: '{"resource": "test-topic", "salt": "w3goGsGhdyROwoaP", "extra-user-roles":
@@ -132,9 +146,11 @@ To remove the user, remove the relation. Removing the relation automatically rem
 juju remove-relation kafka-k8s data-integrator
 ```
 
+<!-- test:await-idle --timeout 600 --allow-blocked data-integrator -->
+
 The output of the Juju model should be something like this:
 
-```shell
+```text
 Model     Controller  Cloud/Region         Version  SLA          Timestamp
 tutorial  overlord    microk8s/localhost   3.6.8    unsupported  23:12:02Z
 

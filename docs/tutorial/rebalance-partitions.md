@@ -4,6 +4,11 @@ myst:
     description: "Rebalance and reassign Charmed Apache Kafka K8s partitions using LinkedIn's Cruise Control for optimal resource utilization."
 ---
 
+<!-- test:spread
+priority: -300
+kill-timeout: 90m
+-->
+
 (tutorial-rebalance-partitions)=
 # 7. Rebalance and reassign partitions
 
@@ -38,13 +43,13 @@ It is recommended to deploy a separate Juju application for running Cruise Contr
 
 For the purposes of this tutorial, we will be deploying a single Charmed Apache Kafka K8s unit to serve as the `balancer`:
 
-```bash
+```shell
 juju deploy kafka-k8s --config roles=balancer cruise-control --trust
 ```
 
 Earlier in the tutorial, we covered enabling TLS encryption, so we will repeat that step here for the new `cruise-control` application:
 
-```bash
+```shell
 juju integrate cruise-control:certificates self-signed-certificates
 ```
 
@@ -53,9 +58,11 @@ we will integrate the two applications using the `peer_cluster` relation interfa
 ensuring that the `broker` cluster is using the `peer-cluster` relation-endpoint,
 and the `balancer` cluster is using the `peer-cluster-orchestrator` relation-endpoint:
 
-```bash
+```shell
 juju integrate kafka-k8s:peer-cluster-orchestrator cruise-control:peer-cluster
 ```
+
+<!-- test:await-idle --timeout 1200 --allow-blocked opensearch -->
 
 ### Adding new brokers
 
@@ -63,18 +70,29 @@ After completing the steps in the [Integrate with client applications](integrate
 tutorial page, you should have three `kafka-k8s` units and a client application actively writing messages
 to an existing topic. Let's scale-out the `kafka-k8s` application to four units:
 
-```bash
+```shell
 juju scale-application kafka-k8s 4
 ```
+
+<!-- test:await-idle --timeout 1200 --allow-blocked opensearch -->
+
+<!-- test:assert
+test "$(juju status --format json | jq '.applications."kafka-k8s".units | length')" -eq 4
+-->
+
+<!-- test:set-variables
+command: juju show-unit kafka-k8s/0 --format json | jq -r '."kafka-k8s/0".address' | awk '{print "unit-ip: " $1}'
+KAFKA_UNIT_IP: unit-ip
+-->
 
 By default, no partitions are allocated for the new unit `3`.
 You can see that by checking the log directory assignment:
 
-```bash
+```shell
 juju ssh --container kafka kafka-k8s/leader \
     '/opt/kafka/bin/kafka-log-dirs.sh' \
     '--describe' \
-    '--bootstrap-server <unit-ip>:9093' \
+    "--bootstrap-server <unit-ip>:9093" \
     '--command-config /etc/kafka/client.properties' \
     '2> /dev/null' \
     | tail -n +1 | jq -c '.brokers[] | select(.broker == 3)' | jq
@@ -97,7 +115,10 @@ This should produce output similar to the result seen below, with no partitions 
 
 Now, let's run the `rebalance` action to allocate some existing partitions from brokers `0`, `1` and `2` to broker `3`:
 
-```bash
+<!-- test:retry --timeout 2400 --interval 120 --description "Cruise Control readiness" -- juju run cruise-control/0 rebalance mode=add brokerid=3 --wait=2m -->
+
+<!-- test:skip -->
+```shell
 juju run cruise-control/0 rebalance mode=add brokerid=3 --wait=2m
 ```
 
@@ -136,9 +157,11 @@ summary:
 If we are happy with this proposal, we can re-run the action,
 but this time instructing the charm to actually execute the proposal:
 
-```bash
+```shell
 juju run cruise-control/0 rebalance mode=add dryrun=false brokerid=3 --wait=10m
 ```
+
+<!-- test:await-idle --timeout 1200 --allow-blocked opensearch -->
 
 Partition rebalances can take quite some time.
 To monitor the progress, in a separate terminal session, check the Juju debug logs to see it in progress:
@@ -153,11 +176,11 @@ unit-cruise-control-0: 22:19:12 INFO unit.cruise-control/0.juju-log Waiting for 
 
 Once the action is complete, verify the partitions using the same commands as before:
 
-```bash
+```shell
 juju ssh --container kafka kafka-k8s/leader \
     '/opt/kafka/bin/kafka-log-dirs.sh' \
     '--describe' \
-    '--bootstrap-server <unit-ip>:9093' \
+    "--bootstrap-server <unit-ip>:9093" \
     '--command-config /etc/kafka/client.properties' \
     '2> /dev/null' \
     | tail -n +1 | jq -c '.brokers[] | select(.broker == 3)' | jq
@@ -205,20 +228,22 @@ to avoid losing all available replicas for a given partition.
 To remove the most recent broker unit `3` from the previous example,
 re-run the `rebalance` action with `mode=remove`:
 
-```bash
+```shell
 juju run cruise-control/0 rebalance mode=remove dryrun=false brokerid=3 --wait=10m
 ```
+
+<!-- test:await-idle --timeout 1200 --allow-blocked opensearch -->
 
 This does not remove the unit, but moves the partitions from the broker on unit number `3`
 to other brokers within the cluster.
 
 Once the action has been completed, verify that broker `3` no longer has any assigned partitions:
 
-```bash
+```shell
 juju ssh --container kafka kafka-k8s/leader \
     '/opt/kafka/bin/kafka-log-dirs.sh' \
     '--describe' \
-    '--bootstrap-server <unit-ip>:9093' \
+    "--bootstrap-server <unit-ip>:9093" \
     '--command-config /etc/kafka/client.properties' \
     '2> /dev/null' \
     | tail -n +1 | jq -c '.brokers[] | select(.broker == 3)' | jq
@@ -241,11 +266,11 @@ Make sure that broker `3` now has no partitions assigned, for example:
 
 Now, it is safe to scale-in the cluster, removing the broker number `3` completely:
 
-```bash
+```shell
 juju scale-application kafka-k8s 3
 ```
 
-### Full cluster rebalancing
+<!-- test:await-idle --timeout 1200 --allow-blocked opensearch -->
 
 Over time, an Apache Kafka cluster in production may develop an imbalance in partition allocation,
 with some brokers having greater/fewer allocated than others. This can occur as topic load fluctuates,
@@ -259,7 +284,7 @@ this includes a full re-shuffle of partition allocation across all currently liv
 To achieve this, re-run the `rebalance` action with the `mode=full`.
 You can do it in the "dryrun" mode (by default) for now:
 
-```bash
+```shell
 juju run cruise-control/0 rebalance mode=full --wait=10m
 ```
 
@@ -276,6 +301,8 @@ summary:
 
 To implement the proposed changes, run the same command but with `dryrun=false`:
 
-```bash
+```shell
 juju run cruise-control/0 rebalance mode=full dryrun=false --wait=10m
 ```
+
+<!-- test:await-idle --timeout 1200 --allow-blocked opensearch -->

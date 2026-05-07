@@ -4,6 +4,11 @@ myst:
     description: "Deploy Charmed Apache Kafka K8s with brokers and KRaft controllers on Kubernetes using Juju."
 ---
 
+<!-- test:spread
+priority: 200
+kill-timeout: 30m
+-->
+
 (tutorial-deploy)=
 # 2. Deploy Apache Kafka
 
@@ -49,11 +54,19 @@ cluster is the orchestrator:
 juju integrate kafka-k8s:peer-cluster-orchestrator kraft:peer-cluster
 ```
 
+<!-- test:await-idle --timeout 1200 -->
+
+<!-- test:assert
+test "$(juju status --format json | jq '.applications."kafka-k8s".units | length')" -eq 3
+test "$(juju status --format json | jq '.applications.kraft.units | length')" -eq 3
+-->
+
 Juju will now fetch Charmed Apache Kafka K8s and begin deploying both applications to the cloud
 before connecting them to exchange access credentials and machine endpoints.
 This process can take several minutes depending on the resources available.
 You can track the progress by running:
 
+<!-- test:skip -->
 ```shell
 watch -n 1 --color juju status --color
 ```
@@ -67,6 +80,7 @@ you can watch the status and messages both applications change.
 Wait until the application is ready - when it is ready, `watch -n 1 --color juju status --color`
 will show:
 
+<!-- test:skip -->
 ```shell
 Model     Controller  Cloud/Region        Version  SLA          Timestamp
 tutorial  microk8s    microk8s/localhost  3.6.12   unsupported  17:30:56Z

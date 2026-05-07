@@ -4,6 +4,11 @@ myst:
     description: "Clean up your Charmed Apache Kafka K8s deployment and remove Juju from your environment after completing the tutorial."
 ---
 
+<!-- test:spread
+priority: -400
+kill-timeout: 15m
+-->
+
 (tutorial-cleanup)=
 # 8. Cleanup your environment
 
@@ -21,17 +26,21 @@ Removing Charmed Apache Kafka K8s as shown below will delete all the data in the
 To remove Charmed Apache Kafka K8s and the model it is hosted on run the command:
 
 ```shell
-juju destroy-model tutorial --destroy-storage
+juju destroy-model tutorial --destroy-storage --force --no-prompt
 ```
+
+<!-- test:wait --seconds 120 -->
 
 Next step is to remove the Juju controller. You can see all of the available controllers by entering `juju controllers`. To remove the controller enter:
 
+<!-- test:skip -->
 ```shell
 juju destroy-controller overlord
 ```
 
 Finally to remove Juju altogether, enter:
 
+<!-- test:skip -->
 ```shell
 sudo snap remove juju --purge
 ```

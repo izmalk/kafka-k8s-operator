@@ -4,6 +4,11 @@ myst:
     description: "Set up your local environment with Multipass, MicroK8s, and Juju for deploying Charmed Apache Kafka K8s on Kubernetes."
 ---
 
+<!-- test:spread
+priority: 300
+kill-timeout: 20m
+-->
+
 (tutorial-environment)=
 # 1. Set up the environment
 
@@ -25,6 +30,7 @@ Let's install Multipass from [Snap](https://snapcraft.io/multipass) and launch a
 "[{spellexception}`charm-dev`](https://github.com/canonical/multipass-blueprints/blob/main/v1/charm-dev.yaml)"
 cloud-init configuration:
 
+<!-- test:skip -->
 ```shell
 sudo snap install multipass && \
 multipass launch --cpus 4 --memory 8G --disk 50G --name my-vm charm-dev
@@ -38,12 +44,14 @@ See all `multipass launch` parameters in the
 Multipass [list of commands](https://multipass.run/docs/multipass-cli-commands)
 is short and self-explanatory, for example, to show all running VMs:
 
+<!-- test:skip -->
 ```shell
 multipass list
 ```
 
 As soon as the new VM starts, enter:
 
+<!-- test:skip -->
 ```shell
 multipass shell my-vm
 ```
@@ -83,3 +91,7 @@ juju add-model tutorial
 
 Check the model status with the `juju status` command.
 For a newly created model, you should see the "Model XXX is empty" message.
+
+<!-- test:assert
+juju models | grep -q tutorial
+-->

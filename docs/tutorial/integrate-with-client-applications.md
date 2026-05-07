@@ -4,6 +4,11 @@ myst:
     description: "Learn how to integrate client applications with Charmed Apache Kafka K8s using the Data Integrator charm for user management."
 ---
 
+<!-- test:spread
+priority: 100
+kill-timeout: 60m
+-->
+
 (tutorial-integrate-with-client-applications)=
 # 3. Integrate with client applications
 
@@ -41,6 +46,7 @@ juju deploy data-integrator --config topic-name=test-topic --config extra-user-r
 
 The expected output:
 
+<!-- test:skip -->
 ```shell
 Located charm "data-integrator" in charm-hub, revision 11
 Deploying "data-integrator" from charm-hub charm "data-integrator", revision 11 in channel stable on noble
@@ -56,9 +62,11 @@ Integrate the two applications with:
 juju integrate data-integrator kafka-k8s
 ```
 
+<!-- test:await-idle --timeout 1200 -->
+
 Wait for `watch -n 1 --color juju status --color` to show:
 
-```shell
+```text
 Model     Controller        Cloud/Region         Version  SLA          Timestamp
 tutorial  overlord          microk8s/localhost   3.6.8    unsupported  17:00:08Z
 
@@ -113,6 +121,17 @@ ok: "True"
 
 Make note of the values for `bootstrap-server`, `username` and `password`, we'll be using them later.
 
+<!-- test:set-variables
+command: juju run data-integrator/leader get-credentials
+KAFKA_USERNAME: username
+KAFKA_PASSWORD: password
+KAFKA_ENDPOINTS: endpoints
+-->
+
+<!-- test:assert
+test -n "${KAFKA_USERNAME}" && test -n "${KAFKA_PASSWORD}" && test -n "${KAFKA_ENDPOINTS}"
+-->
+
 ### Produce/consume messages
 
 We will now use the username and password to produce some messages to Apache Kafka.
@@ -126,13 +145,15 @@ juju deploy kafka-test-app --channel edge
 
 Once the charm is up and running, you can log into the container
 
-```shell
+<!-- test:await-idle --timeout 1200 --allow-blocked kafka-test-app -->
+
+```bash
 juju ssh kafka-test-app/0 /bin/bash
 ```
 
 and make sure that the Python virtual environment libraries are visible:
 
-```shell
+```bash
 export PYTHONPATH="/var/lib/juju/agents/unit-kafka-test-app-0/charm/venv:/var/lib/juju/agents/unit-kafka-test-app-0/charm/lib"
 ```
 
@@ -140,7 +161,7 @@ Once this is set up, you should be able to use the `client.py` script that expos
 some functionality to produce and consume messages.
 You can explore the usage of the script
 
-```shell
+```bash
 python3 -m charms.kafka.v0.client --help
 ```
 
@@ -148,7 +169,7 @@ python3 -m charms.kafka.v0.client --help
 
 <summary>Output example</summary>
 
-```shell
+```text
 usage: client.py [-h] [-t TOPIC] [-u USERNAME] [-p PASSWORD] [-c CONSUMER_GROUP_PREFIX] [-s SERVERS] [-x SECURITY_PROTOCOL] [-n NUM_MESSAGES] [-r REPLICATION_FACTOR] [--num-partitions NUM_PARTITIONS]
                  [--producer] [--consumer] [--cafile-path CAFILE_PATH] [--certfile-path CERTFILE_PATH] [--keyfile-path KEYFILE_PATH] [--mongo-uri MONGO_URI] [--origin ORIGIN]
 
@@ -189,7 +210,7 @@ Using this script, you can therefore start producing messages (change the values
 `password` and `bootstrap-servers` to the ones obtained from the `data-integrator`
 application in the previous section):
 
-```shell
+```bash
 python3 -m charms.kafka.v0.client \
   -u relation-6 \
   -p S4IeRaYaiiq0tsM7m2UZuP2mSI573IGV \
@@ -205,7 +226,7 @@ Let this run for a few seconds, then halt the process with `Ctrl+c`.
 
 Now, consume them with:
 
-```shell
+```bash
 python3 -m charms.kafka.v0.client \
   -u relation-6 \
   -p S4IeRaYaiiq0tsM7m2UZuP2mSI573IGV \
@@ -245,6 +266,8 @@ Test App with Apache Kafka:
 juju integrate kafka-test-app kafka-k8s
 ```
 
+<!-- test:await-idle --timeout 1200 -->
+
 ```{note}
 This will both take care of creating a dedicated user (as was done for the `data-integrator`)
 as well as start a producer process publishing messages to the `TOP-PICK` topic,
@@ -253,7 +276,7 @@ basically automating what was done before by hand.
 
 After some time, the `juju status` output should show
 
-```shell
+```text
 Model     Controller  Cloud/Region         Version  SLA          Timestamp
 tutorial  overlord    microk8s/localhost   3.6.8    unsupported  18:58:47+02:00
 
@@ -283,6 +306,9 @@ you can just remove the relation:
 juju remove-relation kafka-test-app kafka-k8s
 ```
 
+<!-- test:await-idle --timeout 1200 --allow-blocked kafka-test-app -->
+<!-- test:wait --seconds 30 -->
+
 #### Consuming messages
 
 Note that the `kafka-test-app` charm can also similarly be used to consume messages
@@ -291,6 +317,8 @@ by changing its configuration to:
 ```shell
 juju config kafka-test-app topic_name=TOP-PICK role=consumer consumer_group_prefix=cg
 ```
+
+<!-- test:wait --seconds 5 -->
 
 After configuring the Apache Kafka Test App, just integrate it again with the
 Charmed Apache Kafka K8s. This will again create a new user and start the consumer process.
