@@ -93,12 +93,12 @@ juju model-config --file=~/cloudinit-userdata.yaml
 Deploy the PostgreSQL, OpenSearch, and Kafka Connect charms:
 
 ```shell
-juju deploy kafka-connect --channel edge
-juju deploy postgresql --channel 14/stable
-juju deploy opensearch --channel 2/stable --config profile=testing
+juju deploy kafka-connect --channel edge --trust
+juju deploy postgresql --channel 14/stable --trust
+juju deploy opensearch --channel 2/stable --config profile=testing --trust
 ```
 
-<!-- test:await-idle --timeout 1200 --allow-blocked opensearch,kafka-connect -->
+<!-- test:await-idle --timeout 1200 --allow-blocked data-integrator,opensearch,kafka-connect -->
 
 OpenSearch charm requires a TLS relation to become active.
 We will use the [`self-signed-certificates` charm](https://charmhub.io/self-signed-certificates)
@@ -126,7 +126,7 @@ Finally, since we will be using TLS on the Kafka Connect interface, integrate th
 juju integrate kafka-connect self-signed-certificates
 ```
 
-<!-- test:await-idle --timeout 1200 --allow-blocked opensearch,kafka-connect -->
+<!-- test:await-idle --timeout 1200 --allow-blocked data-integrator,opensearch,kafka-connect -->
 
 Use the `watch -n 1 --color juju status --color` command to continuously probe your model's status. After a couple of minutes, all the applications should be in `active|idle` state, and you should see an output like the following, with 7 applications and 13 units:
 
@@ -303,7 +303,7 @@ juju integrate postgresql-connect-integrator postgresql
 juju integrate postgresql-connect-integrator kafka-connect
 ```
 
-<!-- test:await-idle --timeout 1200 --allow-blocked opensearch -->
+<!-- test:await-idle --timeout 1200 --allow-blocked data-integrator,opensearch -->
 
 After a couple of minutes, `juju status` command should show the `postgresql-connect-integrator` in `active|idle` state, with a message indicating that the ETL task is running:
 
@@ -342,7 +342,7 @@ juju integrate opensearch-connect-integrator opensearch
 juju integrate opensearch-connect-integrator kafka-connect
 ```
 
-<!-- test:await-idle --timeout 1200 --allow-blocked opensearch -->
+<!-- test:await-idle --timeout 1200 --allow-blocked data-integrator,opensearch -->
 
 Wait a couple of minutes and run `juju status`, now both `opensearch-connect-integrator` and `postgresql-connect-integrator` applications should be in `active|idle` state, showing a message indicating that the ETL task is running:
 

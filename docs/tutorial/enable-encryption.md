@@ -14,8 +14,6 @@ kill-timeout: 40m
 
 This is a part of the [Charmed Apache Kafka K8s Tutorial](index.md).
 
-## Transport Layer Security (TLS)
-
 [TLS](https://en.wikipedia.org/wiki/Transport_Layer_Security) is used to encrypt data exchanged
 between two applications; it secures data transmitted over the network.
 Typically, enabling TLS within a highly available database, and between a highly available database
@@ -44,7 +42,7 @@ For more information about which charm may better suit your use-case, please see
 [Security with X.509 certificates](https://charmhub.io/topics/security-with-x-509-certificates) page.
 ```
 
-### Configure TLS
+## Configure TLS
 
 Before enabling TLS on Charmed Apache Kafka K8s we must first deploy the `self-signed-certificates`
 charm:
@@ -55,21 +53,7 @@ juju deploy self-signed-certificates --config ca-common-name="Tutorial CA"
 
 <!-- test:await-idle --timeout 1200 --allow-blocked data-integrator -->
 
-Wait for the charm to settle into an `active/idle` state, as shown by the `juju status`:
-
-```text
-Model     Controller        Cloud/Region         Version  SLA          Timestamp
-tutorial  overlord          microk8s/localhost   3.6.8    unsupported  23:27:35Z
-
-App                       Version  Status  Scale  Charm                     Channel  Rev  Exposed  Message
-self-signed-certificates           active      1  self-signed-certificates  1/edge   336  no       
-
-Unit                         Workload  Agent  Machine  Public address  Ports  Message
-self-signed-certificates/0*  active    idle   7        10.233.204.134         
-
-Machine  State    Address         Inst id        Base          AZ  Message
-7        started  10.233.204.134  juju-07a730-7  ubuntu@24.04      Running
-```
+Wait for the charm to settle into an `active`/`idle` state, as shown by `juju status`.
 
 To enable TLS on Charmed Apache Kafka K8s, integrate with `self-signed-certificates` charm:
 
@@ -83,44 +67,52 @@ juju integrate kafka-k8s:certificates self-signed-certificates
 juju status --format json | jq -e '.applications["self-signed-certificates"]["application-status"].current == "active"'
 -->
 
-After the charms settle into `active/idle` states, the Apache Kafka listeners should now have been swapped to the
-default encrypted port 9093. This can be tested by testing whether the ports are open/closed with `telnet`:
+After the charms settle into `active`/`idle` states, the Apache Kafka listeners
+should now have been swapped to the default encrypted port `9093`.
 
-<!-- test:skip -->
-```shell
-telnet <IP> 9092 
-telnet <IP> 9093
+```{caution}
+When no other application is integrated to Charmed Apache Kafka K8s,
+the cluster is secured-by-default and external listeners (bound to port `9092`) are disabled,
+thus preventing any external incoming connection. 
 ```
 
-### Enable TLS encrypted connection
+Let's integrate the `data-integrator` application to the Apache Kafka K8s cluster:
 
-Once TLS is configured on the cluster side, client applications should be configured as well to connect to
-the correct port and trust the self-signed CA provided by the `self-signed-certificates` charm.
-
-Make sure that the `kafka-test-app` is not connected to the Charmed Apache Kafka K8s,
-by removing the relation if it exists:
-
-<!-- test:skip -->
 ```shell
-juju remove-relation kafka-test-app kafka-k8s
+juju integrate data-integrator kafka-k8s
 ```
 
-Then, enable encryption on the `kafka-test-app` by relating with the `self-signed-certificates` charm:
+<!-- test:await-idle --timeout 1200 -->
+
+## Enable TLS encrypted connection
+
+Once TLS is configured on the cluster side, client applications should be configured as well
+to connect to the correct port and trust the self-signed CA provided by
+the `self-signed-certificates` charm.
+
+Let's deploy our [Apache Kafka Test App](https://charmhub.io/kafka-test-app) again:
+
+```shell
+juju deploy kafka-test-app --channel edge
+```
+
+Then, enable encryption on the `kafka-test-app` by integrating with
+the `self-signed-certificates` charm:
 
 ```shell
 juju integrate kafka-test-app self-signed-certificates
 ```
 
-<!-- test:await-idle --timeout 300 -->
+<!-- test:await-idle --timeout 600 --allow-blocked kafka-test-app -->
 
 We can then set up the `kafka-test-app` to produce messages with the usual configuration
-(note that there is no difference here with the unencrypted workflow):
+(note that the process here is the same as with the unencrypted workflow):
 
 ```shell
-juju config kafka-test-app topic_name=HOT-TOPIC role=producer num_messages=25
+juju config kafka-test-app topic_name=HOT-TOPIC role=producer num_messages=20
 ```
 
-Then integrate with the `kafka-k8s` cluster:
+Finally, relate with the `kafka-k8s` cluster:
 
 ```shell
 juju integrate kafka-k8s kafka-test-app
@@ -128,32 +120,37 @@ juju integrate kafka-k8s kafka-test-app
 
 <!-- test:await-idle --timeout 600 -->
 
-As before, you can check that the messages are pushed into the Apache Kafka cluster by inspecting the logs:
+Wait for `active`/`idle` status in `juju status` and check that the messages are pushed into
+the Charmed Apache Kafka K8s cluster by inspecting the logs:
 
 ```shell
 juju exec --application kafka-test-app "tail /tmp/*.log"
 ```
 
-Note that if the `kafka-test-app` was running before, there may be multiple logs related to the different
-runs. Refer to the latest logs produced and also check that in the logs the connection is indeed established
-with the encrypted port `9093`.
+Refer to the latest logs produced and also check that in the logs the connection
+is indeed established with the encrypted port `9093`.
 
-### Remove external TLS certificate
+## Remove external TLS certificate
 
-To remove the external TLS and return to the locally generated one, remove relation with certificates provider:
+To remove the external TLS and return to the locally generated one,
+remove relation with certificates provider:
 
 ```shell
 juju remove-relation kafka-k8s self-signed-certificates
 ```
 
-<!-- test:await-idle --timeout 600 -->
+<!-- test:await-idle --timeout 600 --allow-blocked data-integrator -->
 
 The Charmed Apache Kafka K8s application is not using TLS anymore for client connections.
 
-<!-- test:run
-juju remove-relation kafka-test-app kafka-k8s || true
-juju remove-relation kafka-test-app self-signed-certificates || true
-juju remove-application kafka-test-app --destroy-storage --no-prompt || true
--->
+## Clean up
+
+Before proceeding further, let's remove the `kafka-test-app` application:
+
+```shell
+juju remove-relation kafka-test-app kafka-k8s
+juju remove-relation kafka-test-app self-signed-certificates
+juju remove-application kafka-test-app --destroy-storage
+```
 
 <!-- test:await-idle --timeout 600 --allow-blocked data-integrator -->

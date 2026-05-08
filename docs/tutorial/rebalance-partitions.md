@@ -14,71 +14,75 @@ kill-timeout: 90m
 
 This is a part of the [Charmed Apache Kafka K8s Tutorial](index.md).
 
-## Partition rebalancing and reassignment
+By default, when adding more brokers to a Charmed Apache Kafka K8s cluster, the current
+allocated partitions on the original brokers are not automatically redistributed across
+the new brokers. This can lead to inefficient resource usage and over-provisioning.
+On the other hand, when removing brokers to reduce capacity, partitions assigned
+to the removed brokers are also not redistributed, which can result in under-replicated data
+at best and permanent data loss at worst.
 
-By default, when adding more brokers to a Charmed Apache Kafka K8s cluster, the current allocated partitions on the original brokers are not automatically redistributed across the new brokers. This can lead to inefficient resource usage and over-provisioning. On the other hand, when removing brokers to reduce capacity, partitions assigned to the removed brokers are also not redistributed, which can result in under-replicated data at best and permanent data loss at worst.
+To address this, we can make use of
+[LinkedIn's Cruise Control](https://github.com/linkedin/cruise-control),
+which is bundled as part of the Charmed Apache Kafka
+[snap](https://github.com/canonical/charmed-kafka-snap)
+and [rock](https://github.com/canonical/charmed-kafka-rock).
 
-To address this, we can make use of [LinkedIn's Cruise Control](https://github.com/linkedin/cruise-control), which is bundled as part of the Charmed Apache Kafka [snap](https://github.com/canonical/charmed-kafka-snap) and [rock](https://github.com/canonical/charmed-kafka-rock).
-
-At a high level, Cruise Control is made up of the following five components:
+<!-- At a high level, Cruise Control is made up of the following five components:
 
 - **Workload Monitor** - responsible for the metrics collection from Charmed Apache Kafka K8s
 - **Analyser** - generates allocation proposals based on configured [Goals](https://github.com/linkedin/cruise-control?tab=readme-ov-file#goals)
 - **Anomaly Detector** - detects failures in brokers, disks, metrics or goals and (optionally) self-heals
 - **Web server** - a REST API for user operations
-- **Executor** - issues re-allocation commands to Apache Kafka
+- **Executor** - issues re-allocation commands to Apache Kafka -->
 
-### Deploying partition balancer
+The Charmed Apache Kafka K8s charm has a configuration option `roles`, which takes
+a list of possible values. Different roles can be configured to run on the same machine,
+or as separate Juju applications.
 
-The Charmed Apache Kafka K8s charm has a configuration option `roles`, which takes a list of possible values.
-Different roles can be configured to run on the same machine, or as separate Juju applications.
+The `balancer` role is required to run the Cruise Control.
+We will need to add this role to one of the existing Juju applications:
+either `kafka-k8s` with the `broker` role, or `kraft` with the `controller` role.
 
-The two necessary roles for cluster rebalancing are:
-- `broker` - running Apache Kafka
-- `balancer` - running Cruise Control
+We recommend combining `controller` and `balancer` role together on the `kraft` application,
+due to higher performance demands of the `broker` role.
 
-```{note}
-It is recommended to deploy a separate Juju application for running Cruise Control in production environments.
-```
+## Setup
 
-For the purposes of this tutorial, we will be deploying a single Charmed Apache Kafka K8s unit to serve as the `balancer`:
-
-```shell
-juju deploy kafka-k8s --config roles=balancer cruise-control --trust
-```
-
-Earlier in the tutorial, we covered enabling TLS encryption, so we will repeat that step here for the new `cruise-control` application:
+Let's add the role `balancer` to the existing `kraft` Juju application:
 
 ```shell
-juju integrate cruise-control:certificates self-signed-certificates
+juju config kraft roles=balancer,controller
 ```
 
-Now, to make the new `cruise-control` application aware of the existing Apache Kafka cluster,
-we will integrate the two applications using the `peer_cluster` relation interface,
-ensuring that the `broker` cluster is using the `peer-cluster` relation-endpoint,
-and the `balancer` cluster is using the `peer-cluster-orchestrator` relation-endpoint:
+<!-- test:await-idle --timeout 1200 --allow-blocked data-integrator,opensearch -->
 
+Wait for the status to become `active`/`idle`:
+
+<!-- test:skip -->
 ```shell
-juju integrate kafka-k8s:peer-cluster-orchestrator cruise-control:peer-cluster
+watch -n 1 --color juju status --color
 ```
 
-<!-- test:await-idle --timeout 1200 --allow-blocked opensearch -->
+## Adding new brokers
 
-### Adding new brokers
-
-After completing the steps in the [Integrate with client applications](integrate-with-client-applications)
-tutorial page, you should have three `kafka-k8s` units and a client application actively writing messages
-to an existing topic. Let's scale-out the `kafka-k8s` application to four units:
+Let's scale-out the `kafka-k8s` application to four units (add one more):
 
 ```shell
 juju scale-application kafka-k8s 4
 ```
 
-<!-- test:await-idle --timeout 1200 --allow-blocked opensearch -->
+<!-- test:await-idle --timeout 1200 --allow-blocked data-integrator,opensearch -->
 
 <!-- test:assert
 test "$(juju status --format json | jq '.applications."kafka-k8s".units | length')" -eq 4
 -->
+
+Wait for the additional unit to be fully deployed and active:
+
+<!-- test:skip -->
+```shell
+watch -n 1 --color juju status --color
+```
 
 <!-- test:set-variables
 command: juju show-unit kafka-k8s/0 --format json | jq -r '."kafka-k8s/0".address' | awk '{print "unit-ip: " $1}'
@@ -86,7 +90,7 @@ KAFKA_UNIT_IP: unit-ip
 -->
 
 By default, no partitions are allocated for the new unit `3`.
-You can see that by checking the log directory assignment:
+Check that via the log directory assignment:
 
 ```shell
 juju ssh --container kafka kafka-k8s/leader \
@@ -115,19 +119,19 @@ This should produce output similar to the result seen below, with no partitions 
 
 Now, let's run the `rebalance` action to allocate some existing partitions from brokers `0`, `1` and `2` to broker `3`:
 
-<!-- test:retry --timeout 2400 --interval 120 --description "Cruise Control readiness" -- juju run cruise-control/0 rebalance mode=add brokerid=3 --wait=2m -->
+<!-- test:retry --timeout 2400 --interval 120 --description "Cruise Control readiness" -- juju run kraft/leader rebalance mode=add brokerid=3 --wait=2m -->
 
 <!-- test:skip -->
 ```shell
-juju run cruise-control/0 rebalance mode=add brokerid=3 --wait=2m
+juju run kraft/leader rebalance mode=add brokerid=3 --wait=2m
 ```
 
-```{note}
-If this action fails with a message similar to `Cruise Control balancer service
-has not yet collected enough data to provide a partition reallocation proposal`,
-wait 20 minutes or so and try again.
-Cruise Control takes a while to collect sufficient metrics from an Apache Kafka
-cluster during a cold deployment.
+```{warning}
+If this action fails with a message similar to
+`Cruise Control balancer service has not yet collected enough data to provide a partition
+reallocation proposal`, wait for at least 20 minutes and try again.
+Cruise Control takes a long time (sometimes more than an hour) to collect sufficient metrics
+from an Apache Kafka cluster during a cold deployment.
 ```
 
 By default, the `rebalance` action runs as a "dryrun", where the returned result is what **would** happen
@@ -158,23 +162,25 @@ If we are happy with this proposal, we can re-run the action,
 but this time instructing the charm to actually execute the proposal:
 
 ```shell
-juju run cruise-control/0 rebalance mode=add dryrun=false brokerid=3 --wait=10m
+juju run kraft/leader rebalance mode=add dryrun=false brokerid=3 --wait=10m
 ```
 
-<!-- test:await-idle --timeout 1200 --allow-blocked opensearch -->
+<!-- test:await-idle --timeout 1200 --allow-blocked data-integrator,opensearch -->
 
-Partition rebalances can take quite some time.
-To monitor the progress, in a separate terminal session, check the Juju debug logs to see it in progress:
+Partition rebalancing can take significant time.
+To monitor the progress, in a separate terminal session, check the `juju debug-log` command output
+to see it in progress:
 
 ```text
-unit-cruise-control-0: 22:18:41 INFO unit.cruise-control/0.juju-log Waiting for task execution to finish for user_task_id='d3e426a3-6c2e-412e-804c-8a677f2678af'...
-unit-cruise-control-0: 22:18:51 INFO unit.cruise-control/0.juju-log Waiting for task execution to finish for user_task_id='d3e426a3-6c2e-412e-804c-8a677f2678af'...
-unit-cruise-control-0: 22:19:02 INFO unit.cruise-control/0.juju-log Waiting for task execution to finish for user_task_id='d3e426a3-6c2e-412e-804c-8a677f2678af'...
-unit-cruise-control-0: 22:19:12 INFO unit.cruise-control/0.juju-log Waiting for task execution to finish for user_task_id='d3e426a3-6c2e-412e-804c-8a677f2678af'...
+unit-kraft-0: 22:18:41 INFO unit.kraft/0.juju-log Waiting for task execution to finish for user_task_id='d3e426a3-6c2e-412e-804c-8a677f2678af'...
+unit-kraft-0: 22:18:51 INFO unit.kraft/0.juju-log Waiting for task execution to finish for user_task_id='d3e426a3-6c2e-412e-804c-8a677f2678af'...
+unit-kraft-0: 22:19:02 INFO unit.kraft/0.juju-log Waiting for task execution to finish for user_task_id='d3e426a3-6c2e-412e-804c-8a677f2678af'...
+unit-kraft-0: 22:19:12 INFO unit.kraft/0.juju-log Waiting for task execution to finish for user_task_id='d3e426a3-6c2e-412e-804c-8a677f2678af'...
 ...
 ```
 
-Once the action is complete, verify the partitions using the same commands as before:
+Once the action is complete, verify the partitions on the newly added unit
+using the same commands as before:
 
 ```shell
 juju ssh --container kafka kafka-k8s/leader \
@@ -208,7 +214,7 @@ partitions present, completing the adding of a new broker to the cluster:
 }
 ```
 
-### Removing old brokers
+## Removing old brokers
 
 To safely scale-in an Apache Kafka cluster,
 we must make sure to carefully move any existing data from units about to be removed,
@@ -229,10 +235,10 @@ To remove the most recent broker unit `3` from the previous example,
 re-run the `rebalance` action with `mode=remove`:
 
 ```shell
-juju run cruise-control/0 rebalance mode=remove dryrun=false brokerid=3 --wait=10m
+juju run kraft/leader rebalance mode=remove dryrun=false brokerid=3 --wait=10m
 ```
 
-<!-- test:await-idle --timeout 1200 --allow-blocked opensearch -->
+<!-- test:await-idle --timeout 1200 --allow-blocked data-integrator,opensearch -->
 
 This does not remove the unit, but moves the partitions from the broker on unit number `3`
 to other brokers within the cluster.
@@ -270,7 +276,9 @@ Now, it is safe to scale-in the cluster, removing the broker number `3` complete
 juju scale-application kafka-k8s 3
 ```
 
-<!-- test:await-idle --timeout 1200 --allow-blocked opensearch -->
+<!-- test:await-idle --timeout 1200 --allow-blocked data-integrator,opensearch -->
+
+## Full cluster rebalancing
 
 Over time, an Apache Kafka cluster in production may develop an imbalance in partition allocation,
 with some brokers having greater/fewer allocated than others. This can occur as topic load fluctuates,
@@ -284,8 +292,11 @@ this includes a full re-shuffle of partition allocation across all currently liv
 To achieve this, re-run the `rebalance` action with the `mode=full`.
 You can do it in the "dryrun" mode (by default) for now:
 
+<!-- test:retry --timeout 1200 --interval 120 --description "Cruise Control full rebalance" -- juju run kraft/leader rebalance mode=full --wait=3m -->
+
+<!-- test:skip -->
 ```shell
-juju run cruise-control/0 rebalance mode=full --wait=10m
+juju run kraft/leader rebalance mode=full --wait=10m
 ```
 
 Looking at the bottom of the output, see the value of the `balancedness` score before and after
@@ -302,7 +313,5 @@ summary:
 To implement the proposed changes, run the same command but with `dryrun=false`:
 
 ```shell
-juju run cruise-control/0 rebalance mode=full dryrun=false --wait=10m
+juju run kraft/leader rebalance mode=full dryrun=false --wait=10m
 ```
-
-<!-- test:await-idle --timeout 1200 --allow-blocked opensearch -->

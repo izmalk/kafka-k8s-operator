@@ -311,8 +311,8 @@ juju remove-relation kafka-test-app kafka-k8s
 
 #### Consuming messages
 
-Note that the `kafka-test-app` charm can also similarly be used to consume messages
-by changing its configuration to:
+The `kafka-test-app` charm can also be used to consume messages
+by changing its configuration:
 
 ```shell
 juju config kafka-test-app topic_name=TOP-PICK role=consumer consumer_group_prefix=cg
@@ -320,8 +320,27 @@ juju config kafka-test-app topic_name=TOP-PICK role=consumer consumer_group_pref
 
 <!-- test:wait --seconds 5 -->
 
-After configuring the Apache Kafka Test App, just integrate it again with the
-Charmed Apache Kafka K8s. This will again create a new user and start the consumer process.
+After configuring the Apache Kafka Test App, integrate it again with
+the Charmed Apache Kafka K8s:
+
+```shell
+juju integrate kafka-test-app kafka-k8s
+```
+
+<!-- test:await-idle --timeout 1200 -->
+
+This will again create a new user and start the consumer process.
+You can check progress with `juju status`.
+
+Wait for everything to be `active` and `idle` again.
+Now you can remove the `kafka-test-app` application entirely
+as we won't need it anymore.
+
+```shell
+juju remove-application kafka-test-app --destroy-storage --no-prompt
+```
+
+<!-- test:await-idle --timeout 1200 -->
 
 ## What's next?
 
