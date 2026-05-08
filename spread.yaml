@@ -34,7 +34,7 @@ backends:
         mkdir -p /root/.local/share/juju
         sg snap_microk8s -c 'juju bootstrap microk8s microk8s'
 
-        echo root:\${SPREAD_PASSWORD} | chpasswd
+        echo root:${SPREAD_PASSWORD} | chpasswd
         printf 'PasswordAuthentication yes\nPermitRootLogin yes\n' \
           > /etc/ssh/sshd_config.d/10-spread.conf
         systemctl restart ssh
