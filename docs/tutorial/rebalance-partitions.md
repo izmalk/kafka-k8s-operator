@@ -71,6 +71,7 @@ Let's scale-out the `kafka-k8s` application to four units (add one more):
 juju scale-application kafka-k8s 4
 ```
 
+<!-- test:wait --seconds 15 -->
 <!-- test:await-idle --timeout 1200 --allow-blocked data-integrator,opensearch -->
 
 <!-- test:assert
@@ -276,6 +277,7 @@ Now, it is safe to scale-in the cluster, removing the broker number `3` complete
 juju scale-application kafka-k8s 3
 ```
 
+<!-- test:wait --seconds 15 -->
 <!-- test:await-idle --timeout 1200 --allow-blocked data-integrator,opensearch -->
 
 ## Full cluster rebalancing
