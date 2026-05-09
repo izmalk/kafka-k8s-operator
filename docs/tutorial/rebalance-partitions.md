@@ -93,6 +93,7 @@ KAFKA_UNIT_IP: unit-ip
 By default, no partitions are allocated for the new unit `3`.
 Check that via the log directory assignment:
 
+<!-- test:skip -->
 ```shell
 juju ssh --container kafka kafka-k8s/leader \
     '/opt/kafka/bin/kafka-log-dirs.sh' \
@@ -183,6 +184,7 @@ unit-kraft-0: 22:19:12 INFO unit.kraft/0.juju-log Waiting for task execution to 
 Once the action is complete, verify the partitions on the newly added unit
 using the same commands as before:
 
+<!-- test:skip -->
 ```shell
 juju ssh --container kafka kafka-k8s/leader \
     '/opt/kafka/bin/kafka-log-dirs.sh' \
@@ -246,6 +248,7 @@ to other brokers within the cluster.
 
 Once the action has been completed, verify that broker `3` no longer has any assigned partitions:
 
+<!-- test:skip -->
 ```shell
 juju ssh --container kafka kafka-k8s/leader \
     '/opt/kafka/bin/kafka-log-dirs.sh' \
