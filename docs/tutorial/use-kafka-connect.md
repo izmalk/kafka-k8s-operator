@@ -4,7 +4,12 @@ myst:
     description: "Use Kafka Connect ETL framework to move data between PostgreSQL and OpenSearch with Charmed Apache Kafka K8s on Kubernetes."
 ---
 
-<!-- test:spread
+<!-- test:spread – SKIPPED
+     The charms used (kafka-connect, postgresql, opensearch, and their
+     connect-integrators) are VM-only.  K8s equivalents are either missing
+     (connect-integrators) or in early beta (opensearch-k8s).  Re-enable
+     once kafka-connect-k8s, postgresql-k8s, opensearch-k8s and their
+     integrators all have stable K8s channels.
 priority: -200
 kill-timeout: 60m
 -->

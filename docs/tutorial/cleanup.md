@@ -6,7 +6,7 @@ myst:
 
 <!-- test:spread
 priority: -400
-kill-timeout: 30m
+kill-timeout: 10m
 -->
 
 (tutorial-cleanup)=
@@ -25,7 +25,7 @@ To remove Charmed Apache Kafka K8s and the `tutorial` model it is hosted on,
 along with all other applications:
 
 ```shell
-juju destroy-model tutorial --destroy-storage --force --no-prompt
+juju destroy-model tutorial --destroy-storage --force --no-wait --no-prompt
 ```
 
 <!-- test:wait --seconds 120 -->
