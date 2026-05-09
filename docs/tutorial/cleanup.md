@@ -24,11 +24,10 @@ Removing a Juju model may result in data loss for all applications in this model
 To remove Charmed Apache Kafka K8s and the `tutorial` model it is hosted on,
 along with all other applications:
 
+<!-- test:run-with-timeout --seconds 120 -->
 ```shell
 juju destroy-model tutorial --destroy-storage --force --no-wait --no-prompt
 ```
-
-<!-- test:wait --seconds 120 -->
 
 This will remove all applications in the `tutorial` model (Charmed Apache Kafka K8s,
 OpenSearch, PostgreSQL).

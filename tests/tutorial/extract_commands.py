@@ -473,6 +473,16 @@ def _discover_and_process(input_dir: Path, output_dir: Path) -> None:
     if not md_files:
         sys.exit(f"Error: no .md files found in {input_dir}")
 
+    # Clean all generated artifacts before regenerating.
+    import shutil
+    for sh in output_dir.glob("*.sh"):
+        if sh.name == "helpers.sh":
+            continue
+        sh.unlink()
+        task_dir = sh.with_suffix("")
+        if task_dir.is_dir():
+            shutil.rmtree(task_dir)
+
     processed = 0
     for md_file in md_files:
         source = md_file.read_text(encoding="utf-8")
