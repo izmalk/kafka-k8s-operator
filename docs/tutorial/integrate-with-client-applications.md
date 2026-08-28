@@ -67,7 +67,7 @@ data-integrator           active      1  data-integrator  latest/stable  180  no
 kafka-k8s        4.0.0    active      3  kafka-k8s            4/edge     226  no       
 kraft            4.0.0    active      3  kafka-k8s            4/edge     226  no       
 
-Unit                Workload  Agent  Machine  Public address  Ports           Message
+Unit                Workload  Agent  Address        Ports           Message
 data-integrator/0*  active    idle   6        10.233.204.111                  
 kafka-k8s/0*        active    idle   0        10.233.204.241  9092,19093/tcp  
 kafka-k8s/1         active    idle   1        10.233.204.196  9092,19093/tcp  
@@ -127,7 +127,7 @@ juju deploy kafka-test-app --channel edge
 Once the charm is up and running, you can log into the container
 
 ```shell
-juju ssh kafka-test-app/0 /bin/bash
+juju ssh --container kafka-test-app kafka-test-app/0 /bin/bash
 ```
 
 and make sure that the Python virtual environment libraries are visible:

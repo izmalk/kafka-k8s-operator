@@ -22,7 +22,7 @@ To migrate a cluster we need:
 - An "old" existing Kafka cluster to migrate from.
   - The cluster needs to be reachable from/to the new Charmed Apache Kafka K8s cluster.
 - A bootstrapped Juju K8s cloud
-- A Charmed Apache Kafka K8s Connect cluster to run the MirrorMaker tasks. For guidance on how to deploy a new Charmed Apache Kafka K8s cluster, see:
+- A Charmed Apache Kafka Connect K8s cluster to run the MirrorMaker tasks. For guidance on how to deploy a new Charmed Apache Kafka K8s cluster, see:
   - The [How-to use Kafka Connect for ETL workloads guide](how-to-use-kafka-connect)
 - A Charmed Apache Kafka K8s to migrate data to. For guidance on how to deploy a new Charmed Apache Kafka K8s, see:
   - The [Tutorial](tutorial-introduction)
@@ -46,13 +46,13 @@ When the `data-integrator` charm integrates to a `kafka-k8s` application on the 
 Kafka Connect also needs to be integrated to the `kafka-k8s` application to be granted permissions and endpoints to connect to Charmed Apache Kafka K8s:
 
 ```bash
-juju integrate kafka-connect kafka-k8s
+juju integrate kafka-connect-k8s kafka-k8s
 ```
 
 As we will need full access to both Kafka clusters, we will use credentials provided to the `data-integrator`. Get the SASL credentials to connect to the target Apache Kafka cluster:
 
 ```bash
-SECRET=juju show-unit data-integrator/0 --format yaml | yq -r '.. | ."secret-user"? // ""' | grep -oP "[^\/]*$"
+SECRET=$(juju show-unit data-integrator/0 --format yaml | yq -r '.. | ."secret-user"? // ""' | grep -oP "[^\/]*$")
 export NEW_USERNAME=$(juju show-secret --reveal $SECRET | yq -r '.. | .username? // ""')
 export NEW_PASSWORD=$(juju show-secret --reveal $SECRET | yq -r '.. | .password? // ""')
 ```
@@ -85,10 +85,10 @@ For `SSL` or `SASL_SSL` authentication, see the configuration options supported 
 First, get the `admin` credentials for the Kafka Connect application:
 
 ```bash
-CONNECT_SECRET_KEY=$(juju list-secrets | grep kafka-connect | awk '{ print $1}')
+CONNECT_SECRET_KEY=$(juju list-secrets | grep kafka-connect-k8s | awk '{ print $1}')
 export CONNECT_USERNAME=admin
 export CONNECT_PASSWORD=$(juju show-secret --reveal $CONNECT_SECRET_KEY --format yaml | yq '.. | ."admin-password"? // ""' | tr -d '"')
-export CONNECT_ENDPOINTS=$(juju show-unit kafka-connect/0 --format json | yq '.. | ."public-address"? // ""' | tr -d '"')
+export CONNECT_ENDPOINTS=$(juju show-unit kafka-connect-k8s/0 --format json | yq '.. | ."public-address"? // ""' | tr -d '"')
 ```
 
 To start the MirrorMaker replication task, make an HTTP request to Kafka Connect, using the credentials and endpoints for both Kafka clusters:

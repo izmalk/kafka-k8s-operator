@@ -28,6 +28,7 @@ For guidance on managing your deployed Charmed Apache Kafka K8s, see:
 * [How to manage client connections](how-to-client-connections)
 * [How to upgrade](how-to-upgrade)
 * [How to use Kafka UI](how-to-kafka-ui)
+* [How to connect external clients from outside the Kubernetes cluster](how-to-external-k8s-connection)
 
 ## Security
 
@@ -61,10 +62,6 @@ Advanced features of Charmed Apache Kafka K8s include:
 * [Schemas and serialisation](how-to-schemas-serialisation)
 * [Kafka Connect usage](how-to-use-kafka-connect)
 
-<!-- Alternative landing page prototype
-| | |
-|--|--|
-| **Deployment** </br> Deployment follows a broadly similar pattern on all platforms, but due to differences in the platforms, configuration and deployment must be approached differently in each case. </br> [Common deployment guide](how-to-deploy-deploy-anywhere), [AWS](how-to-deploy-deploy-on-aws), [Azure](how-to-deploy-deploy-on-azure) |**Management** </br> For guidance on managing your deployed Charmed Apache Kafka K8s, see: [How to manage units](how-to-manage-units), [How to manage related applications](how-to-client-connections), [How to Upgrade](how-to-upgrade) | -->
 
 ```{toctree}
 :titlesonly:
@@ -79,7 +76,7 @@ Encryption<tls-encryption.md>
 Upgrades<upgrade.md>
 Monitoring<monitoring.md>
 cluster/index.md
-External K8s connection<external-k8s-connection>
+External K8s connection<external-k8s-connection.md>
 Create mTLS credentials<create-mtls-client-credentials.md>
 Schemas and serialisation<schemas-serialisation.md>
 Kafka Connect<kafka-connect.md>

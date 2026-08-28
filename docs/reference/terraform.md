@@ -39,7 +39,7 @@ The `broker`, `controller`, `connect`, `karapace`, `ui`, and `integrator` variab
 | `constraints` | `string` | Juju constraints (default: `"arch=amd64"`) |
 | `resources` | `map(string)` | Charm resources |
 | `revision` | `number` | Charm revision to deploy |
-| `base` | `string` | Application base (default: `"ubuntu@24.04"`) |
+| `base` | `string` | Application base (default: `"ubuntu@24.04"`; `"ubuntu@22.04"` for `connect`) |
 | `units` | `number` | Number of units to deploy |
 | `storage` | `map(string)` | Storage directives (broker and controller only) |
 

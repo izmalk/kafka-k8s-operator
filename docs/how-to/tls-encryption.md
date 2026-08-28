@@ -58,15 +58,15 @@ By default, Charmed Apache Kafka K8s applications will generate their own intern
 First, generate (or otherwise obtain) a private keys for each Charmed Apache Kafka K8s unit. For example, if you have three `kafka-k8s` units, generate external private keys for each one:
 
 ```bash
-openssl genrsa -out kafka-0.key 4096
-openssl genrsa -out kafka-1.key 4096
-openssl genrsa -out kafka-2.key 4096
+openssl genrsa -out kafka-k8s-0.key 4096
+openssl genrsa -out kafka-k8s-1.key 4096
+openssl genrsa -out kafka-k8s-2.key 4096
 ```
 
 Then, add these external private keys to a new Juju secret:
 
 ```bash
-juju add-secret external-kafka-pks kafka-0="$(cat kafka-0.key)" kafka-1="$(cat kafka-1.key)" kafka-2="$(cat kafka-2.key)"
+juju add-secret external-kafka-pks kafka-k8s-0="$(cat kafka-k8s-0.key)" kafka-k8s-1="$(cat kafka-k8s-1.key)" kafka-k8s-2="$(cat kafka-k8s-2.key)"
 ```
 
 ```{note}
@@ -76,7 +76,7 @@ The Juju secret keys **MUST** follow the naming constraint of `<kafka-applicatio
 Grant the Charmed Apache Kafka K8s application access to the new Juju secret:
 
 ```bash
-juju grant-secret external-kafka-pks
+juju grant-secret external-kafka-pks kafka-k8s
 ```
 
 Take note of the `secret-id` in the response.

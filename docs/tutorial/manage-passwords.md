@@ -143,7 +143,7 @@ data-integrator           blocked      1  data-integrator  latest/stable  180  n
 kafka-k8s        4.0.0    active       3  kafka-k8s        4/edge         226  no       
 kraft            4.0.0    active       3  kafka-k8s        4/edge         226  no       
 
-Unit                Workload  Agent  Machine  Public address  Ports      Message
+Unit                Workload  Agent  Address        Ports      Message
 data-integrator/0*  blocked   idle   6        10.233.204.111             Please relate the data-integrator with the desired product
 kafka-k8s/0*        active    idle   0        10.233.204.241  19093/tcp  
 kafka-k8s/1         active    idle   1        10.233.204.196  19093/tcp  

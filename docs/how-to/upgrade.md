@@ -10,7 +10,7 @@ myst:
 This guide applies for in-place upgrades that involve (at most) minor version upgrade of Apache Kafka workload, e.g. between Apache Kafka 4.0.x to 4.1.x.
 
 ```{warning}
-In-place upgrades across major workload versions are **NOT SUPPORTED*.
+In-place upgrades across major workload versions are **NOT SUPPORTED**.
 See [full cluster-to-cluster migrations](how-to-cluster-migration) for major version upgrades (for example, from Apache Kafka 3.x to 4.x).
 ```
 
@@ -38,7 +38,7 @@ When performing an in-place upgrade process, the full process is composed of the
 
 For highly available, stateful applications, it is often desirable to upgrade a single unit first, then pause to perform manual validations before continuing. If the upgrade fails, for example, due to a bug or an unforeseen version incompatibility, the impact is limited to that single unit. When the application is replicated across multiple nodes, this approach ensures no measurable disruption to the production service.
 
-Charmed Apache Kafka K8s exposes the `pause-after-unit-refresh` configuration option to help control this pausing behaviour. By default, this option is set to `none`, meaning that a refresh will complete without a pause for manual checks.
+Charmed Apache Kafka K8s exposes the `pause-after-unit-refresh` configuration option to help control this pausing behaviour. By default, this option is set to `first`, meaning that a refresh will pause after the first unit has upgraded, waiting for confirmation before proceeding.
 
 To change refresh pausing behaviour, set this configuration option **before** triggering a Juju refresh:
 
@@ -48,13 +48,13 @@ juju config kafka-k8s pause-after-unit-refresh="all"
 
 This will now pause the refresh after each unit has upgraded, before waiting for confirmation.
 
-If you only wish to pause once, before letting the refresh proceed unhindered, set:
+If you do not wish to pause at all, and let the refresh proceed unhindered, set:
 
 ```shell
-juju config kafka-k8s pause-after-unit-refresh="first"
+juju config kafka-k8s pause-after-unit-refresh="none"
 ```
 
-This will only pause after the first unit has completed it's upgrade.
+This will complete the refresh without any pause for manual checks.
 
 (step-2-collect)=
 ### Step 2: Collect
@@ -69,10 +69,10 @@ KAFKA_CHARM_REVISION=$(juju status --format json | yq .applications.<KAFKA_APP_N
 
 Next, perform preparatory tasks to define the upgrade plan, ensuring the process can proceed safely.
 
-To do so, run the `pre-upgrade-check` action against the leader unit:
+To do so, run the `pre-refresh-check` action against the leader unit:
 
 ```shell
-juju run kafka-k8s/leader pre-upgrade-check 
+juju run kafka-k8s/leader pre-refresh-check 
 ```
 
 Make sure that the output of the action is successful.
@@ -83,7 +83,7 @@ Although optional, this action should always be run before Charmed Apache Kafka 
 
 ### Step 4: Upgrade
 
-Use the [`juju refresh`](https://juju.is/docs/juju/juju-refresh) command to trigger the charm upgrade process.
+Use the [`juju refresh`](https://documentation.ubuntu.com/juju/latest/reference/juju-cli/list-of-juju-cli-commands/refresh/) command to trigger the charm upgrade process.
 Note that the upgrade can be performed against:
 
 * selected channel/track, therefore upgrading to the latest revision published on that track:
@@ -99,7 +99,7 @@ Note that the upgrade can be performed against:
 * a local charm file:
 
   ```shell
-  juju refresh kafka-k8s --path ./kafka_ubuntu-24.04-amd64.charm
+  juju refresh kafka-k8s --path ./kafka-k8s_ubuntu-24.04-amd64.charm
   ```
 
 When issuing the commands, all units will refresh (i.e. receive new charm content), and the upgrade charm event will be fired. The charm will take care of executing an update (if required) and a restart of the workload one unit at a time to not lose high availability. 
@@ -120,12 +120,12 @@ The upgrade process can be monitored using `juju status` command, where the mess
 
 ```shell
 App        Version  Status  Scale  Charm      Channel   Rev  Exposed  Message
-kafka-k8s               active      4  kafka-k8s      4/stable  111  no
+kafka-k8s  4.1.1    active      4  kafka-k8s  4/stable  111  no
 
-Unit          Workload  Agent  Machine  Public address  Ports  Message
-kafka-k8s/0       active    idle   3        10.193.41.131          Other units upgrading first...
-kafka-k8s/1*      active    idle   4        10.193.41.109          Upgrading...
-kafka-k8s/2       active    idle   5        10.193.41.221          Upgrade completed
+Unit          Workload  Agent  Address       Ports  Message
+kafka-k8s/0       active    idle   10.193.41.131          Other units upgrading first...
+kafka-k8s/1*      active    idle   10.193.41.109          Upgrading...
+kafka-k8s/2       active    idle   10.193.41.221          Upgrade completed
 ```
 
 #### Rollbacks
@@ -135,7 +135,7 @@ At any point in the upgrade, it is possible to safely rollback to the original c
 To rollback, use the `juju refresh` command with the original charm revision:
 
 ```shell
-juju refresh kafka-k8s --revision KAFKA_CHARM_REVISION
+juju refresh kafka-k8s --revision $KAFKA_CHARM_REVISION
 ```
 
 where `KAFKA_CHARM_REVISION` was obtained earlier in [Step 2: Collect](step-2-collect) before the refresh was triggered.

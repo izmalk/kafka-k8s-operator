@@ -11,21 +11,21 @@ myst:
 
 The Kafka Connect charm delivers automated operations management from day 0 to day 2 on *Kafka Connect*, which hugely simplifies the deployment and administrative tasks on Kafka Connect clusters.
 
-This operator can be found on [Charmhub](https://charmhub.io/kafka-connect) and it comes with production-ready features such as automated and manual plugin management, replication and scalability, authentication, TLS support, and seamless integration with Charmed Apache Kafka K8s set of operators.
+This operator can be found on [Charmhub](https://charmhub.io/kafka-connect-k8s) and it comes with production-ready features such as automated and manual plugin management, replication and scalability, authentication, TLS support, and seamless integration with Charmed Apache Kafka K8s set of operators.
 
 This How-to guide covers deploying Kafka Connect, integrating it with Charmed Apache Kafka K8s, and running a connector—either manually or using an integrator charm.
 
 ## Prerequisites
 
-For this guide, we will need an active Charmed Apache Kafka K8s application. Follow the [How to deploy Charmed Apache Kafka K8s](https://discourse.charmhub.io/t/charmed-kafka-documentation-how-to-deploy/13261) guide to set up the environment.
+For this guide, we will need an active Charmed Apache Kafka K8s application. Follow the [How to deploy Charmed Apache Kafka K8s](how-to-deploy-deploy-anywhere) guide to set up the environment.
 
 ## Deploy and set up
 
-To deploy [Kafka Connect charm](https://charmhub.io/kafka-connect) and integrate it with Charmed Apache Kafka K8s, use the following commands:
+To deploy [Kafka Connect K8s charm](https://charmhub.io/kafka-connect-k8s) and integrate it with Charmed Apache Kafka K8s, use the following commands:
 
 ```bash
-juju deploy kafka-connect --channel stable
-juju integrate kafka-connect kafka-k8s
+juju deploy kafka-connect-k8s --channel 4/stable
+juju integrate kafka-connect-k8s kafka-k8s
 ```
 
 ## Use REST API
@@ -47,13 +47,13 @@ secret:cvh7kruupa1s46bqvuig
 Now, grant the secret to the Kafka Connect charm using `juju grant-secret` command:
 
 ```bash
-juju grant-secret mysecret kafka-connect
+juju grant-secret mysecret kafka-connect-k8s
 ```
 
 Finally, the Kafka Connect charm should be configured to use the newly provided secret. This can be done by running the `juju config` command to specify the secret-id obtained above:
 
 ```bash
-juju config kafka-connect system-users=secret:cvh7kruupa1s46bqvuig
+juju config kafka-connect-k8s system-users=secret:cvh7kruupa1s46bqvuig
 ```
 
 To verify that Kafka Connect is properly configured and functioning, send a request to the REST interface to list all registered connectors using the password set in Juju secret:
@@ -97,7 +97,7 @@ wget https://github.com/Aiven-Open/cloud-storage-connectors-for-apache-kafka/rel
 Once downloaded, attach the connector to the charm using the `juju attach-resource` command.
 
 ```bash
-juju attach-resource kafka-connect connect-plugin=./s3-source-connector-for-apache-kafka-3.2.0.tar
+juju attach-resource kafka-connect-k8s connect-plugin=./s3-source-connector-for-apache-kafka-3.2.0.tar
 ```
 
 This triggers a restart of Charmed Kafka Connect application. Once all units show `active|idle` status, the plugin is ready to use. To verify using the Kafka Connect REST API:

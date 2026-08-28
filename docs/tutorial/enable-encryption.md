@@ -57,7 +57,7 @@ tutorial  overlord          microk8s/localhost   3.6.8    unsupported  23:27:35Z
 App                       Version  Status  Scale  Charm                     Channel  Rev  Exposed  Message
 self-signed-certificates           active      1  self-signed-certificates  1/edge   336  no       
 
-Unit                         Workload  Agent  Machine  Public address  Ports  Message
+Unit                         Workload  Agent  Address        Ports  Message
 self-signed-certificates/0*  active    idle   7        10.233.204.134         
 
 Machine  State    Address         Inst id        Base          AZ  Message

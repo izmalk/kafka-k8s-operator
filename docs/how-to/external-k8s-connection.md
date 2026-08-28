@@ -8,7 +8,7 @@ myst:
 # External K8s connection
 
 ```{note}
-This feature is available in charm revisions 69+.
+This feature is available on the 4.x track of the charm.
 ```
 
 To make the Charmed Apache Kafka K8s brokers reachable from outside the Kubernetes cluster,
@@ -63,7 +63,7 @@ To achieve this:
    (default value is `false`):
 
     ```shell
-    juju config kafka-k8s expose_external=nodeport
+    juju config kafka-k8s expose-external=nodeport
     ```
 
 2. Enable at least one listener using the appropriate relation endpoints:

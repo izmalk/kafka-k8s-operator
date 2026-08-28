@@ -38,49 +38,15 @@ kafka-k8s                 4.0.0    active      3  kafka-k8s                 4/ed
 kraft                     4.0.0    active      3  kafka-k8s                 4/edge         226  no       
 self-signed-certificates           active      1  self-signed-certificates  1/edge         336  no       
 
-Unit                         Workload  Agent  Machine  Public address  Ports           Message
-data-integrator/0*           active    idle   6        10.233.204.111                  
-kafka-k8s/0*                 active    idle   0        10.233.204.241  9093,19093/tcp  
-kafka-k8s/1                  active    idle   1        10.233.204.196  9093,19093/tcp  
-kafka-k8s/2                  active    idle   2        10.233.204.148  9093,19093/tcp  
-kraft/0                      active    idle   3        10.233.204.125  9098/tcp        
-kraft/1*                     active    idle   4        10.233.204.36   9098/tcp        
-kraft/2                      active    idle   5        10.233.204.225  9098/tcp        
-self-signed-certificates/0*  active    idle   7        10.233.204.134                  
-```
-
-### Set the necessary kernel properties for OpenSearch
-
-Since we will be deploying the OpenSearch charm, we need to make necessary kernel
-configurations required for OpenSearch charm to function properly,
-[described in detail here](https://canonical-charmed-opensearch.readthedocs-hosted.com/2/tutorial/1-set-up-the-environment/#set-kernel-parameters).
-This basically means running the following commands:
-
-```bash
-sudo tee -a /etc/sysctl.conf > /dev/null <<EOT
-vm.max_map_count=262144
-vm.swappiness=0
-net.ipv4.tcp_retries2=5
-fs.file-max=1048576
-EOT
-
-sudo sysctl -p
-```
-
-Next, we should set the required model parameters using the `juju model-config` command:
-
-```bash
-cat <<EOF > cloudinit-userdata.yaml
-cloudinit-userdata: |
-  postruncmd:
-    - [ 'echo', 'vm.max_map_count=262144', '>>', '/etc/sysctl.conf' ]
-    - [ 'echo', 'vm.swappiness=0', '>>', '/etc/sysctl.conf' ]
-    - [ 'echo', 'net.ipv4.tcp_retries2=5', '>>', '/etc/sysctl.conf' ]
-    - [ 'echo', 'fs.file-max=1048576', '>>', '/etc/sysctl.conf' ]
-    - [ 'sysctl', '-p' ]
-EOF
-
-juju model-config --file=./cloudinit-userdata.yaml
+Unit                         Workload  Agent  Address        Ports           Message
+data-integrator/0*           active    idle   10.233.204.111                  
+kafka-k8s/0*                 active    idle   10.233.204.241  9093,19093/tcp  
+kafka-k8s/1                  active    idle   10.233.204.196  9093,19093/tcp  
+kafka-k8s/2                  active    idle   10.233.204.148  9093,19093/tcp  
+kraft/0                      active    idle   10.233.204.125  9098/tcp        
+kraft/1*                     active    idle   10.233.204.36   9098/tcp        
+kraft/2                      active    idle   10.233.204.225  9098/tcp        
+self-signed-certificates/0*  active    idle   10.233.204.134                  
 ```
 
 ### Deploy the databases and Kafka Connect charms
@@ -88,9 +54,15 @@ juju model-config --file=./cloudinit-userdata.yaml
 Deploy the PostgreSQL, OpenSearch, and Kafka Connect charms:
 
 ```bash
-juju deploy kafka-connect --channel edge
-juju deploy postgresql --channel 14/stable
+juju deploy kafka-connect-k8s --channel edge
+juju deploy postgresql-k8s --channel 14/stable
 juju deploy opensearch --channel 2/stable --config profile=testing
+```
+
+```{note}
+The OpenSearch charm requires certain kernel parameters to be set on the hosting
+Kubernetes nodes,
+[described in detail here](https://canonical-charmed-opensearch.readthedocs-hosted.com/2/tutorial/1-set-up-the-environment/#set-kernel-parameters).
 ```
 
 OpenSearch charm requires a TLS relation to become active.
@@ -110,13 +82,13 @@ juju integrate opensearch self-signed-certificates
 Then, activate the Kafka Connect application by integrating it with the Apache Kafka application:
 
 ```bash
-juju integrate kafka-k8s kafka-connect
+juju integrate kafka-k8s kafka-connect-k8s
 ```
 
 Finally, since we will be using TLS on the Kafka Connect interface, integrate the Kafka Connect application with the TLS operator:
 
 ```bash
-juju integrate kafka-connect self-signed-certificates
+juju integrate kafka-connect-k8s self-signed-certificates
 ```
 
 Use the `watch -n 1 --color juju status --color` command to continuously probe your model's status. After a couple of minutes, all the applications should be in `active|idle` state, and you should see an output like the following, with 7 applications and 13 units:
@@ -130,21 +102,21 @@ data-integrator                    active      1  data-integrator           late
 kafka-k8s                 4.0.0    active      3  kafka-k8s                 4/edge         226  no       
 kraft                     4.0.0    active      3  kafka-k8s                 4/edge         226  no       
 opensearch                         active      1  opensearch                2/edge         218  no       
-postgresql                14.15    active      1  postgresql                14/stable      553  no       
+postgresql-k8s            14.15    active      1  postgresql-k8s            14/stable      553  no       
 
 self-signed-certificates           active      1  self-signed-certificates  1/edge         336  no       
 
-Unit                         Workload  Agent  Machine  Public address  Ports           Message
-data-integrator/0*           active    idle   6        10.233.204.111                  
-opensearch/0*                active    idle   11       10.233.204.172  9200/tcp  
-postgresql/0*                active    idle   12       10.233.204.121  5432/tcp        Primary
-kafka-k8s/0*                 active    idle   0        10.233.204.241  9093,19093/tcp  
-kafka-k8s/1                  active    idle   1        10.233.204.196  9093,19093/tcp  
-kafka-k8s/2                  active    idle   2        10.233.204.148  9093,19093/tcp  
-kraft/0                      active    idle   3        10.233.204.125  9098/tcp        
-kraft/1*                     active    idle   4        10.233.204.36   9098/tcp        
-kraft/2                      active    idle   5        10.233.204.225  9098/tcp        
-self-signed-certificates/0*  active    idle   7        10.233.204.134                  
+Unit                         Workload  Agent  Address        Ports           Message
+data-integrator/0*           active    idle   10.233.204.111                  
+opensearch/0*                active    idle   10.233.204.172  9200/tcp  
+postgresql-k8s/0*            active    idle   10.233.204.121  5432/tcp        Primary
+kafka-k8s/0*                 active    idle   10.233.204.241  9093,19093/tcp  
+kafka-k8s/1                  active    idle   10.233.204.196  9093,19093/tcp  
+kafka-k8s/2                  active    idle   10.233.204.148  9093,19093/tcp  
+kraft/0                      active    idle   10.233.204.125  9098/tcp        
+kraft/1*                     active    idle   10.233.204.36   9098/tcp        
+kraft/2                      active    idle   10.233.204.225  9098/tcp        
+self-signed-certificates/0*  active    idle   10.233.204.134                  
 ```
 
 ### Load test data
@@ -194,13 +166,13 @@ EOF
 Next, copy the `populate.sql` script to the PostgreSQL unit using the `juju scp` command:
 
 ```bash
-juju scp /tmp/populate.sql postgresql/0:/home/ubuntu/populate.sql
+juju scp /tmp/populate.sql postgresql-k8s/0:/home/ubuntu/populate.sql
 ```
 
 Then, follow the [Access PostgreSQL](https://charmhub.io/postgresql/docs/t-access) tutorial to retrieve the password for the `operator` user on the PostgreSQL database using the `get-password` action:
 
 ```bash
-juju run postgresql/leader get-password
+juju run postgresql-k8s/leader get-password
 ```
 
 As a result, you should see output similar to the following:
@@ -213,7 +185,7 @@ password: bQOUgw8ZZgUyPA6n
 Make note of the password, and use `juju ssh` to connect to the PostgreSQL unit:
 
 ```bash
-juju ssh postgresql/leader
+juju ssh --container postgresql postgresql-k8s/leader
 ```
 
 Once connected to the unit, use the `psql` command line tool with the `operator` user credentials, to create the database named `tutorial`:
@@ -271,8 +243,8 @@ Each Kafka Connect integrator application needs at least two relations:
 Integrate both Kafka Connect and PostgreSQL with the `postgresql-connect-integrator` charm:
 
 ```bash
-juju integrate postgresql-connect-integrator postgresql
-juju integrate postgresql-connect-integrator kafka-connect
+juju integrate postgresql-connect-integrator postgresql-k8s
+juju integrate postgresql-connect-integrator kafka-connect-k8s
 ```
 
 After a couple of minutes, `juju status` command should show the `postgresql-connect-integrator` in `active|idle` state, with a message indicating that the ETL task is running:
@@ -305,7 +277,7 @@ To activate the `opensearch-connect-integrator`, make the necessary integrations
 
 ```bash
 juju integrate opensearch-connect-integrator opensearch
-juju integrate opensearch-connect-integrator kafka-connect
+juju integrate opensearch-connect-integrator kafka-connect-k8s
 ```
 
 Wait a couple of minutes and run `juju status`, now both `opensearch-connect-integrator` and `postgresql-connect-integrator` applications should be in `active|idle` state, showing a message indicating that the ETL task is running:
@@ -378,7 +350,7 @@ The `hits.total` value should be `5`, as shown in the output example below:
 Now let's insert a new post into the PostgreSQL database. First SSH in to the PostgreSQL leader unit:
 
 ```bash
-juju ssh postgresql/leader
+juju ssh --container postgresql postgresql-k8s/leader
 ```
 
 Then, insert a new post using following command and the password for the `operator` user on the PostgreSQL:

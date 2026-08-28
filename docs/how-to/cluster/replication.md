@@ -43,15 +43,15 @@ The result should be similar to:
 Model  Controller  Cloud/Region         Version  SLA          Timestamp
 k      overlord    microk8s/localhost   3.6.21   unsupported  10:45:37+02:00
 
-App            Version  Status  Scale  Charm          Channel      Rev  Exposed  Message
-active         4.1.1    active      1  kafka-k8s      4/stable     111  no
-passive        4.1.1    active      1  kafka-k8s      4/stable     111  no
-kafka-connect           active      1  kafka-connect  4/stable      35  no
+App            Version  Status  Scale  Charm              Channel      Rev  Exposed  Message
+active         4.1.1    active      1  kafka-k8s          4/stable     111  no
+passive        4.1.1    active      1  kafka-k8s          4/stable     111  no
+kafka-connect-k8s       active      1  kafka-connect-k8s  4/stable      18  no
 
-Unit              Workload  Agent  Machine  Public address  Ports           Message
-active/0*         active    idle   0        10.86.75.171    19092/tcp
-passive/0*        active    idle   1        10.86.75.153    9092,19092/tcp
-kafka-connect/0*  active    idle   2        10.86.75.45     8083/tcp
+Unit                    Workload  Agent  Address       Ports           Message
+active/0*               active    idle   10.86.75.171  19092/tcp
+passive/0*              active    idle   10.86.75.153  9092,19092/tcp
+kafka-connect-k8s/0*    active    idle   10.86.75.45   8083/tcp
 ```
 
 The `active` cluster serves as a source and `passive` as a target for replication.
@@ -59,7 +59,7 @@ The `active` cluster serves as a source and `passive` as a target for replicatio
 Integrate Kafka Connect with the passive cluster (as recommended for active-passive replication):
 
 ```bash
-juju integrate kafka-connect passive
+juju integrate kafka-connect-k8s passive
 ```
 
 ## Deploy a MirrorMaker integrator
@@ -73,14 +73,14 @@ juju deploy mirrormaker-connect-integrator mirrormaker
 After some time the app should show up in the model as blocked:
 
 ```text
-Unit              Workload  Agent  Machine  Public address  Ports           Message
-mirrormaker/0*    blocked   idle   4        10.86.75.16                     Integrator not ready to start, check if all relations are setup successfully
+Unit              Workload  Agent  Address      Ports           Message
+mirrormaker/0*    blocked   idle   10.86.75.16                  Integrator not ready to start, check if all relations are setup successfully
 ```
 
 Set up the necessary relations:
 
 ```bash
-juju integrate kafka-connect mirrormaker
+juju integrate kafka-connect-k8s mirrormaker
 juju integrate mirrormaker:source active
 juju integrate mirrormaker:target passive
 ```
@@ -93,15 +93,15 @@ k      overlord    microk8s/localhost   3.6.21   unsupported  10:59:37+02:00
 
 App            Version  Status  Scale  Charm                          Channel      Rev  Exposed  Message
 active         4.1.1    active      1  kafka-k8s                      4/stable     111  no       
-kafka-connect           active      1  kafka-connect                  4/stable      35  no       
+kafka-connect-k8s       active      1  kafka-connect-k8s              4/stable      18  no       
 mirrormaker             active      1  mirrormaker-connect-integrator  latest/edge   6  no       Task Status: UNASSIGNED
 passive        4.1.1    active      1  kafka-k8s                      4/stable     111  no       
 
-Unit              Workload  Agent  Machine  Public address  Ports           Message
-active/0*         active    idle   0        10.86.75.171    9092,19092/tcp  
-kafka-connect/0*  active    idle   2        10.86.75.45     8083/tcp        
-mirrormaker/0*    active    idle   3        10.86.75.189    8080/tcp        Task Status: UNASSIGNED
-passive/0*        active    idle   1        10.86.75.153    9092,19092/tcp  
+Unit                    Workload  Agent  Address       Ports           Message
+active/0*               active    idle   10.86.75.171  9092,19092/tcp  
+kafka-connect-k8s/0*    active    idle   10.86.75.45   8083/tcp        
+mirrormaker/0*          active    idle   10.86.75.189  8080/tcp        Task Status: UNASSIGNED
+passive/0*              active    idle   10.86.75.153  9092,19092/tcp  
 ```
 
 ```{note}
@@ -138,18 +138,18 @@ k      overlord    microk8s/localhost   3.6.21   unsupported  10:59:37+02:00
 App              Version  Status  Scale  Charm                          Channel      Rev  Exposed  Message
 kafka-k8s-a      4.1.1    active      1  kafka-k8s                      4/stable     111  no       
 kafka-k8s-b      4.1.1    active      1  kafka-k8s                      4/stable     111  no       
-kafka-connect-a           active      1  kafka-connect                  4/stable      35  no       
-kafka-connect-b           active      1  kafka-connect                  4/stable      35  no       
+kafka-connect-a           active      1  kafka-connect-k8s              4/stable      18  no       
+kafka-connect-b           active      1  kafka-connect-k8s              4/stable      18  no       
 mirrormaker-a-b           active      1  mirrormaker-connect-integrator  latest/edge   6  no       Task Status: UNASSIGNED
 mirrormaker-b-a           active      1  mirrormaker-connect-integrator  latest/edge   6  no       Task Status: UNASSIGNED
 
-Unit                Workload  Agent  Machine  Public address  Ports           Message
-kafka-k8s-a/0*          active    idle   0        10.86.75.171    9092,19092/tcp  
-kafka-k8s-b/0*          active    idle   1        10.86.75.153    9092,19092/tcp  
-kafka-connect-a/0*  active    idle   2        10.86.75.45     8083/tcp        
-kafka-connect-b/0*  active    idle   2        10.86.75.46     8083/tcp        
-mirrormaker-a-b/0*  active    idle   3        10.86.75.189    8080/tcp        Task Status: UNASSIGNED
-mirrormaker-b-a/0*  active    idle   3        10.86.75.190    8080/tcp        Task Status: UNASSIGNED
+Unit                    Workload  Agent  Address       Ports           Message
+kafka-k8s-a/0*          active    idle   10.86.75.171  9092,19092/tcp  
+kafka-k8s-b/0*          active    idle   10.86.75.153  9092,19092/tcp  
+kafka-connect-a/0*      active    idle   10.86.75.45   8083/tcp        
+kafka-connect-b/0*      active    idle   10.86.75.46   8083/tcp        
+mirrormaker-a-b/0*      active    idle   10.86.75.189  8080/tcp        Task Status: UNASSIGNED
+mirrormaker-b-a/0*      active    idle   10.86.75.190  8080/tcp        Task Status: UNASSIGNED
 ```
 
 Then the integrations needed should be done like follows:

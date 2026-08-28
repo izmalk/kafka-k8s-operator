@@ -14,7 +14,7 @@ This section contains the following reference materials.
 Charmhub generated content:
 
 * [Actions](https://charmhub.io/kafka-k8s/actions?channel=4/stable)
-* [Configurations](https://charmhub.io/kafka-k8s/configure?channel=4/stable)
+* [Configurations](https://charmhub.io/kafka-k8s/configurations?channel=4/stable)
 * [Libraries](https://charmhub.io/kafka-k8s/libraries/kafka?channel=4/stable)
 
 Charm-specific reference materials:
@@ -27,6 +27,7 @@ Charm-specific reference materials:
 General useful references:
 
 * {ref}`reference-broker-listeners`
+* {ref}`Contact information <reference-contact>`
 
 ```{toctree}
 :titlesonly:
@@ -35,12 +36,12 @@ General useful references:
 
 release-notes/index.md
 Actions<https://charmhub.io/kafka-k8s/actions?channel=4/stable>
-Configurations<https://charmhub.io/kafka-k8s/configure?channel=4/stable>
+Configurations<https://charmhub.io/kafka-k8s/configurations?channel=4/stable>
 Libraries<https://charmhub.io/kafka-k8s/libraries/kafka?channel=4/stable>
 file-system-paths.md
 listeners.md
-Terraform module<terraform.md>
 Statuses<statuses.md>
 requirements.md
+Terraform module<terraform.md>
 Contact<contact.md>
 ```

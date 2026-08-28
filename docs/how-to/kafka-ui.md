@@ -1,3 +1,9 @@
+---
+myst:
+  html_meta:
+    description: "Deploy and configure Kafka UI for Charmed Apache Kafka K8s - web-based cluster administration with authentication and TLS support."
+---
+
 (how-to-kafka-ui)=
 # How to use Kafka UI
 

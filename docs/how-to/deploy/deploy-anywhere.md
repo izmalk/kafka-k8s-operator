@@ -4,12 +4,11 @@ myst:
     description: "Platform-independent deployment guide for Charmed Apache Kafka K8s with Juju controller setup and cluster configuration instructions."
 ---
 
+(how-to-deploy-deploy-anywhere)=
 # How to deploy Charmed Apache Kafka K8s
 
 This guide provides platform-independent deployment instructions using the Juju CLI.
 For specific guides, see: [AKS](how-to-deploy-on-aks) and [EKS](how-to-deploy-on-eks). Alternatively, you can [deploy via Terraform](how-to-deploy-terraform).
-
-(how-to-deploy-deploy-anywhere)=
 
 ```{caution}
 For Charmed Apache Kafka on machine cloud (VM), see the [Charmed Apache Kafka documentation](https://documentation.ubuntu.com/charmed-kafka/4/) instead.
@@ -32,7 +31,7 @@ Make sure you have a Juju controller accessible from
 your local environment using the [Juju client snap](https://snapcraft.io/juju). 
 
 List available controllers:
-Make sure that the controller's back-end cloud is **not** Kubernetes-based.
+Make sure that the controller's back-end cloud **is** Kubernetes-based.
 The cloud information can be retrieved with the following command
 
 ```shell
@@ -51,7 +50,7 @@ If there are no suitable controllers, create a new one:
 juju bootstrap <cloud> <controller>
 ```
 
-where `<cloud>` -- the cloud to deploy controller to, e.g. `localhost` if using a LXD cloud. For more information on how to set up a new cloud, see the [How to manage clouds](https://documentation.ubuntu.com/juju/latest/howto/manage-clouds/index.html) guide in Juju documentation.
+where `<cloud>` -- the Kubernetes cloud to deploy controller to, e.g. `microk8s` if using a MicroK8s cloud. For more information on how to set up a new cloud, see the [How to manage clouds](https://documentation.ubuntu.com/juju/latest/howto/manage-clouds/index.html) guide in Juju documentation.
 
 For more Juju controller setup guidance, see the [How to manage controllers](https://documentation.ubuntu.com/juju/latest/howto/manage-controllers/) guide in Juju documentation.
 
@@ -69,7 +68,7 @@ Alternatively, you can switch to any existing Juju model:
 juju switch <model-name>
 ```
 
-Make sure that the model is of a correct type (not `k8s`):
+Make sure that the model is of a correct type (`caas`, i.e. Kubernetes):
 
 ```shell
 juju show-model | yq '.[].type'

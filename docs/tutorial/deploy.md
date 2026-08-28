@@ -107,7 +107,7 @@ for example listing files in a directory:
 juju ssh --container kafka kafka-k8s/leader "ls /opt/kafka/bin/"
 ```
 
-where the printed result will be the output from the `ls \$BIN/bin` command being
+where the printed result will be the output from the `ls /opt/kafka/bin` command being
 executed on the `kafka-k8s` leader unit.
 
 The Charmed Apache Kafka K8s image ships with the Apache Kafka `bin/*.sh` scripts,

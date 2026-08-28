@@ -21,7 +21,7 @@ See the snap contents for the
 [Charmed Apache Kafka K8s](https://github.com/canonical/charmed-kafka-snap/blob/4/edge/snap/snapcraft.yaml).
 
 Every artefact bundled into the Charmed Apache Kafka K8s snap (which the rock is built from)
-is verified after download using its MD5, SHA-256, or SHA-512 checksum.
+is verified after download using its SHA-256 or SHA-512 checksum.
 The installation of certified snaps into the rock is ensured by snap primitives that verify their
 Squashfs file systems images GPG signature.
 For more information on the snap verification process,
@@ -66,9 +66,11 @@ that provides encryption-in-transit capabilities out of the box for:
 * Broker-controller communications
 * Client connections
 
-To set up a secure connection Charmed Apache Kafka K8s needs to be integrated with
-TLS Certificate Provider charms, e.g., `self-signed-certificates` operator.
-Certificate Signing Requests (CSRs) are generated for every unit using the
+By default, a Charmed Apache Kafka K8s application will always use auto-generated
+self-signed TLS/SSL certificates for inter-broker and broker-controller communications.
+To support encrypted client connections, a Charmed Apache Kafka K8s application needs
+to be integrated with a TLS Certificate Provider charm, e.g., the `self-signed-certificates`
+operator. Certificate Signing Requests (CSRs) are generated for every unit using the
 `tls_certificates_interface` library that uses the `cryptography` Python library
 to create X.509 compatible certificates.
 The CSR is signed by the TLS Certificate Provider, returned to the units, and stored
@@ -81,7 +83,7 @@ When encryption is enabled, hostname verification is turned on for client connec
 including both inter-broker and broker-controller communications.
 The cipher suite can be customised by specifying a list of allowed cipher suites
 for external clients. This is done using the charm configuration option
-`ssl_cipher_suites` (see [reference documentation](https://charmhub.io/kafka-k8s/configurations)).
+`ssl-cipher-suites` (see [reference documentation](https://charmhub.io/kafka-k8s/configurations?channel=4/stable#ssl-cipher-suites)).
 
 Encryption at rest is currently not supported, although it can be provided by the substrate (cloud or on-premises).
 
@@ -110,7 +112,7 @@ Clients can authenticate to Apache Kafka using:
 
 1. username and password exchanged using SCRAM-SHA-512 protocols
 2. client certificates or CA (mTLS)
-3. OAuth Authentication using [Hydra](https://discourse.charmhub.io/t/how-to-connect-to-kafka-using-hydra-as-oidc-provider/14610) or [Google](https://discourse.charmhub.io/t/how-to-connect-to-kafka-using-google-as-oidc-provider/14611)
+3. OAuth Authentication through the `oauth` relation, e.g. with the Canonical Identity Platform
 
 When using SCRAM, usernames and passwords are stored in the KRaft controller metadata logs,
 in plain text in configuration files on the broker and controller units, and in Juju secrets.

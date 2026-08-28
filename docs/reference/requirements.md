@@ -27,12 +27,12 @@ Note that while these requirements are recommended for a broad-range of producti
 |     Karapace     |   2   |         -         |  6 GB RAM | Typically not CPU-bound. More cores is better than faster cores. |
 
 ```{note}
-For production deployments, ensure that all nodes are deployed on separate physical machines and that each component node is in a different availability-zone (AZ) for redundancy.
+For production deployments, ensure that all units are scheduled on separate Kubernetes nodes and that each component's units are spread across different availability-zones (AZ) for redundancy.
 ```
 
 ## Supported architectures
 
-The charm uses the `charmed-kafka` [snap](https://snapcraft.io/charmed-kafka), which is currently available for `amd64` only. The `arm64` architecture support is planned.
+The charm uses the `charmed-kafka` OCI image (rock), which is currently available for `amd64` only. The `arm64` architecture support is planned.
 
-Please [contact us](contact) if you are interested in a new architecture to be supported!
+Please [contact us](reference-contact) if you are interested in a new architecture to be supported!
 

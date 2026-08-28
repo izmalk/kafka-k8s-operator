@@ -62,7 +62,7 @@ on the Kubernetes cluster.
 
 It is very important that Juju users are set up with minimal permissions depending
 on the scope of their operations.
-Please refer to the [User access levels](https://juju.is/docs/juju/user-permissions)
+Please refer to the [User access levels](https://documentation.ubuntu.com/juju/latest/reference/user/)
 documentation for more information on the access levels and corresponding abilities.
 
 Juju user credentials must be stored securely and rotated regularly to limit the chances of
@@ -99,7 +99,7 @@ For more information on how to refresh the charm, see the [how-to refresh](how-t
 
 ### Encryption
 
-Charmed Apache Kafka K8s must be deployed with encryption enabled.
+For most production settings, Charmed Apache Kafka K8s should be deployed with encryption enabled.
 To do that, you need to integrate Charmed Apache Kafka K8s with one of the TLS certificate operator charms.
 Please refer to the [Charming Security page](https://charmhub.io/topics/security-with-x-509-certificates)
 for more information on how to select the right certificate provider for your use case.
@@ -114,7 +114,7 @@ Charmed Apache Kafka K8s supports the following authentication layers:
 
 1. [SCRAM-based SASL Authentication](how-to-client-connections)
 2. [certificate-based Authentication (mTLS)](how-to-create-mtls-client-credentials)
-3. OAuth Authentication using [Hydra](https://discourse.charmhub.io/t/how-to-connect-to-kafka-using-hydra-as-oidc-provider/14610) or [Google](https://discourse.charmhub.io/t/how-to-connect-to-kafka-using-google-as-oidc-provider/14611)
+3. OAuth Authentication through the `oauth` relation, e.g. with the Canonical Identity Platform
 
 Each combination of authentication scheme and encryption is associated with the dedicated listener
 and it maps to a well-defined port.
@@ -140,11 +140,9 @@ to a [Loki endpoint](https://charmhub.io/loki-k8s) and exposed via
 
 Access denials are logged at the `INFO` level, whereas allowed accesses are logged at the `DEBUG` level.
 Depending on the auditing needs, customise the logging level either for all logs via the
-[log-level](https://charmhub.io/kafka/configurations) configuration option or
+[log-level](https://charmhub.io/kafka-k8s/configurations?channel=4/stable#log-level) configuration option or
 only tune the logging level of the `authorizerAppender` in the `log4j.properties` file. See
 the [file system paths](reference-file-system-paths) for further information.
-
-<!-- #TODO Add the version to the log-level link, e.g., 4/stable -->
 
 ## Additional resources
 

@@ -87,11 +87,27 @@ To run most of the scripts, you need to provide:
 ### Endpoints and credentials
 
 For Juju admins of the Apache Kafka deployment, the bootstrap servers information can
-be obtained using:
+be obtained using the `get-listeners` action:
 
 ```shell
-BOOTSTRAP_SERVERS=$(juju run kafka-k8s/leader get-admin-credentials | grep "bootstrap.servers" | cut -d "=" -f 2)
+juju run kafka-k8s/leader get-listeners
 ```
+
+This returns the active listeners with their port allocations and advertised addresses,
+for example:
+
+```yaml
+internal:
+  advertised-listener: kafka-k8s-0.kafka-k8s-endpoints:19093
+  auth-mechanism: SCRAM-SHA-512
+  port: 19093
+  protocol: SASL_SSL
+  scope: INTERNAL
+...
+```
+
+The advertised listener of a client listener (e.g. `sasl-plaintext-scram` on port `9092`)
+provides the bootstrap servers to use for client connections.
 
 Admin client authentication information is stored in the
 `/etc/kafka/client.properties` file that is present on every Apache Kafka broker.

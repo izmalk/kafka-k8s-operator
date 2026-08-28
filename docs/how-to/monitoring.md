@@ -8,7 +8,8 @@ myst:
 # How to set up monitoring
 
 Charmed Apache Kafka K8s comes with the [JMX exporter](https://github.com/prometheus/jmx_exporter/).
-The metrics can be queried by accessing the `http://<kafka-unit-ip>:9101/metrics`  endpoint.
+The metrics can be queried by accessing the `http://<kafka-unit-ip>:9101/metrics` endpoint for the
+brokers, and `http://<kafka-unit-ip>:9102/metrics` for the Cruise Control balancer.
 
 Additionally, the charm provides integration with the [Canonical Observability Stack](https://charmhub.io/topics/canonical-observability-stack).
 
@@ -18,12 +19,23 @@ Additionally, the charm provides integration with the [Canonical Observability S
 Deploy the `cos-lite` bundle in a Kubernetes environment. This can be done by following the
 [deployment tutorial](https://charmhub.io/topics/canonical-observability-stack/tutorials/install-microk8s).
 
-The [offers-overlay](https://github.com/canonical/cos-lite-bundle/blob/main/overlays/offers-overlay.yaml)
+If Charmed Apache Kafka K8s is deployed in the same model as the COS charms, integrate the
+applications directly:
+
+```shell
+juju integrate kafka-k8s:metrics-endpoint prometheus
+juju integrate kafka-k8s:grafana-dashboard grafana
+juju integrate kafka-k8s:logging loki
+```
+
+If COS is deployed in a separate model, offer the COS interfaces to be cross-model
+integrated with the Charmed Apache Kafka K8s model. The
+[offers-overlay](https://github.com/canonical/cos-lite-bundle/blob/main/overlays/offers-overlay.yaml)
 can be used, and this step is shown in the COS tutorial.
 
 ### Offer interfaces via the COS controller
 
-Switch to COS K8s environment and offer COS interfaces to be cross-model integrated with Charmed Apache Kafka K8s model:
+Switch to the COS model and offer the COS interfaces:
 
 ```shell
 juju switch <k8s_controller>:<cos_model_name>
@@ -38,7 +50,7 @@ juju offer prometheus:receive-remote-write prometheus-receive-remote-write
 Switch back to the Charmed Apache Kafka K8s model, find offers and integrate with them:
 
 ```shell
-juju switch <machine_controller_name>:<kafka_model_name>
+juju switch <kafka_controller_name>:<kafka_model_name>
 
 juju find-offers <k8s_controller>:
 ```
@@ -61,19 +73,12 @@ juju consume <k8s_controller>:admin/<cos_model_name>.loki-logging
 juju consume <k8s_controller>:admin/<cos_model_name>.grafana-dashboards
 ```
 
-Now, deploy `grafana-agent` (subordinate charm) and integrate it with Charmed Apache Kafka K8s:
+Finally, integrate Charmed Apache Kafka K8s with the consumed COS offers:
 
 ```shell
-juju deploy grafana-agent
-juju integrate kafka-k8s:cos-agent grafana-agent
-```
-
-Finally, integrate `grafana-agent` with consumed COS offers:
-
-```shell
-juju integrate grafana-agent grafana-dashboards
-juju integrate grafana-agent loki-logging
-juju integrate grafana-agent prometheus-receive-remote-write
+juju integrate kafka-k8s:metrics-endpoint prometheus-receive-remote-write
+juju integrate kafka-k8s:grafana-dashboard grafana-dashboards
+juju integrate kafka-k8s:logging loki-logging
 ```
 
 Wait for all components to settle down on a `active/idle` state on both models, e.g. `<kafka_model_name>` and `<cos_model_name>`.
@@ -82,10 +87,10 @@ After this is complete, the monitoring COS stack should be up and running and re
 
 ### Connect Grafana web interface
 
-To connect to the Grafana web interface, follow the [Browse dashboards](https://charmhub.io/topics/canonical-observability-stack/tutorials/install-microk8s?_ga=2.201254254.1948444620.1704703837-757109492.1701777558#heading--browse-dashboards) section of the MicroK8s "Getting started" guide.
+To connect to the Grafana web interface, follow the [Browse dashboards](https://documentation.ubuntu.com/observability/track-2/tutorial/installation/cos-lite-microk8s-sandbox/#browse-dashboards) section of the MicroK8s "Getting started" guide.
 
 ```shell
-juju run grafana/leader get-admin-password --model <k8s_cos_controller>:<cos_model_name>
+juju run grafana/leader get-admin-password --model <k8s_controller>:<cos_model_name>
 ```
 
 ## Tune server logging level
@@ -99,7 +104,7 @@ juju config <KAFKA_APP_NAME> log-level=<LOG_LEVEL>
 ```
 
 ```{tip}
-See also: `log-level` configuration parameter [reference](https://charmhub.io/kafka-k8s/configurations#log-level).
+See also: `log-level` configuration parameter [reference](https://charmhub.io/kafka-k8s/configurations?channel=4/stable#log-level).
 ```
 
 Possible `LOG_LEVEL` values are: `ERROR`, `WARNING`, `INFO`, and `DEBUG`.
@@ -117,7 +122,7 @@ This guide will refer to the models that charms are deployed into as:
 
 * `<cos-model>` for the model containing observability charms (and deployed on K8s)
 * `<apps-model>` for the model containing Charmed Apache Kafka K8s
-* `<apps-model>` for other optional charms (e.g. TLS-certificates operators, `grafana-agent`, `data-integrator`, etc.).
+* `<apps-model>` for other optional charms (e.g. TLS-certificates operators, `data-integrator`, etc.).
 
 ### Create a repository with a custom monitoring setup
 
@@ -135,7 +140,7 @@ Deploy the [COS configuration](https://charmhub.io/cos-configuration-k8s) charm 
 ```shell
 juju deploy cos-configuration-k8s cos-config \
   --config git_repo=<repository_url> \
-  --config git_branch=<branch> \
+  --config git_branch=<branch>
 ```
 
 The COS configuration charm keeps the monitoring stack in sync with our repository, by forwarding resources to Prometheus, Loki and Grafana.
@@ -152,9 +157,9 @@ The path to the resource folders can be set after deployment:
 
 ```shell
 juju config cos-config \
-  --config prometheus_alert_rules_path=<path_to_prom_rules>
-  --config loki_alert_rules_path=<path_to_loki_rules>
-  --config grafana_dashboards_path=<path_to_models>
+  prometheus_alert_rules_path=<path_to_prom_rules> \
+  loki_alert_rules_path=<path_to_loki_rules> \
+  grafana_dashboards_path=<path_to_models>
 ```
 
 Then, integrate the charm to the COS operator to forward the rules and dashboards:
